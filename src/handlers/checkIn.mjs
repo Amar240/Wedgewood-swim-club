@@ -41,7 +41,11 @@ export async function checkInHandler(req, res, next) {
       throw new Error('Missing required environment variable: GHL_LOCATION_ID');
     }
 
-    const alreadyCheckedIn = await isAlreadyCheckedIn(locationId, membershipName);
+    const alreadyCheckedIn = await isAlreadyCheckedIn(
+      locationId,
+      membershipName,
+      phone,
+    );
 
     if (alreadyCheckedIn) {
       return res.status(409).json({
@@ -69,6 +73,7 @@ export async function checkInHandler(req, res, next) {
     await writeCheckInEvent(
       locationId,
       membershipName,
+      phone,
       'check_in',
       numAttending,
       numGuests,

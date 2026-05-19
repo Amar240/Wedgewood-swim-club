@@ -1,3 +1,7 @@
+import { writeCheckInEvent } from '../services/dynamo.mjs';
+import { getMember } from '../services/members.mjs';
+import { isAlreadyCheckedIn } from '../utils/stateCheck.mjs';
+
 const REQUIRED_FIELDS = ['membershipName', 'phone'];
 
 function getMissingFields(body) {
@@ -18,12 +22,50 @@ export async function signOutHandler(req, res, next) {
       });
     }
 
+    const { membershipName, phone } = req.body;
+    const locationId = process.env.GHL_LOCATION_ID;
+
+    if (!locationId) {
+      throw new Error('Missing required environment variable: GHL_LOCATION_ID');
+    }
+
+    const member = await getMember(locationId, membershipName, phone);
+
+    if (!member) {
+      return res.status(404).json({
+        error: 'Member not found',
+        message: 'Please sign up or see staff',
+      });
+    }
+
+    const alreadyCheckedIn = await isAlreadyCheckedIn(
+      locationId,
+      membershipName,
+      phone,
+    );
+
+    if (!alreadyCheckedIn) {
+      return res.status(409).json({
+        error: 'Not signed in',
+        message: "You haven't checked in today",
+      });
+    }
+
+    await writeCheckInEvent(
+      locationId,
+      membershipName,
+      phone,
+      'sign_out',
+      undefined,
+      undefined,
+    );
+
     return res.status(200).json({
       success: true,
       message: 'Sign-out recorded successfully',
       data: {
-        membershipName: req.body.membershipName,
-        phone: req.body.phone,
+        membershipName,
+        phone,
         type: 'sign_out',
         timestamp: new Date().toISOString(),
       },

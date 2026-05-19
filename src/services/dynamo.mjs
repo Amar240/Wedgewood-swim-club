@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
@@ -6,6 +7,7 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 
 let documentClient;
+const ACTIVE_MEMBERS_INDEX_NAME = 'active-members-index';
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -27,13 +29,45 @@ function getDocumentClient() {
   return documentClient;
 }
 
-function buildMembershipPk(locationId, membershipName) {
-  return `LOCATION#${locationId}#MEMBERSHIP#${membershipName}`;
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function buildDailyPk(locationId) {
+  return `LOC#${locationId}#DATE#${getLocalDateString()}`;
+}
+
+function buildActiveMembersPk(locationId) {
+  return `LOC#${locationId}#ACTIVE`;
+}
+
+async function queryAllPages(commandInput) {
+  const items = [];
+  let exclusiveStartKey;
+
+  do {
+    const result = await getDocumentClient().send(
+      new QueryCommand({
+        ...commandInput,
+        ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
+      }),
+    );
+
+    items.push(...(result.Items ?? []));
+    exclusiveStartKey = result.LastEvaluatedKey;
+  } while (exclusiveStartKey);
+
+  return items;
 }
 
 export async function writeCheckInEvent(
   locationId,
   membershipName,
+  phone,
   type,
   numAttending,
   numGuests,
@@ -42,15 +76,21 @@ export async function writeCheckInEvent(
     const tableName = requireEnv('DYNAMO_TABLE_NAME');
     const timestamp = new Date().toISOString();
     const item = {
-      pk: buildMembershipPk(locationId, membershipName),
-      sk: `EVENT#${timestamp}`,
+      pk: buildDailyPk(locationId),
+      sk: `${timestamp}#${randomUUID()}`,
       locationId,
       membershipName,
+      phone,
       type,
-      numAttending,
-      numGuests,
       createdAt: timestamp,
     };
+
+    if (type === 'check_in') {
+      item.GSI1PK = buildActiveMembersPk(locationId);
+      item.GSI1SK = phone;
+      item.numAttending = numAttending;
+      item.numGuests = numGuests;
+    }
 
     await getDocumentClient().send(
       new PutCommand({
@@ -65,23 +105,71 @@ export async function writeCheckInEvent(
   }
 }
 
-export async function getLatestEvent(locationId, membershipName) {
+export async function getLatestEvent(locationId, membershipName, phone) {
   try {
     const tableName = requireEnv('DYNAMO_TABLE_NAME');
-    const result = await getDocumentClient().send(
-      new QueryCommand({
-        TableName: tableName,
-        KeyConditionExpression: 'pk = :pk',
-        ExpressionAttributeValues: {
-          ':pk': buildMembershipPk(locationId, membershipName),
-        },
-        ScanIndexForward: false,
-        Limit: 1,
-      }),
-    );
+    let exclusiveStartKey;
 
-    return result.Items?.[0] ?? null;
+    do {
+      const result = await getDocumentClient().send(
+        new QueryCommand({
+          TableName: tableName,
+          KeyConditionExpression: 'pk = :pk',
+          FilterExpression: '#phone = :phone',
+          ExpressionAttributeNames: {
+            '#phone': 'phone',
+          },
+          ExpressionAttributeValues: {
+            ':pk': buildDailyPk(locationId),
+            ':phone': phone,
+          },
+          ScanIndexForward: false,
+          Limit: 25,
+          ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
+        }),
+      );
+
+      if (result.Items?.length > 0) {
+        return result.Items[0];
+      }
+
+      exclusiveStartKey = result.LastEvaluatedKey;
+    } while (exclusiveStartKey);
+
+    return null;
   } catch (error) {
     throw new Error(`Failed to get latest event: ${error.message}`);
+  }
+}
+
+export async function getTodayEvents(locationId) {
+  try {
+    const tableName = requireEnv('DYNAMO_TABLE_NAME');
+    return await queryAllPages({
+      TableName: tableName,
+      KeyConditionExpression: 'pk = :pk',
+      ExpressionAttributeValues: {
+        ':pk': buildDailyPk(locationId),
+      },
+      ScanIndexForward: false,
+    });
+  } catch (error) {
+    throw new Error(`Failed to get today's events: ${error.message}`);
+  }
+}
+
+export async function getActiveMembers(locationId) {
+  try {
+    const tableName = requireEnv('DYNAMO_TABLE_NAME');
+    return await queryAllPages({
+      TableName: tableName,
+      IndexName: ACTIVE_MEMBERS_INDEX_NAME,
+      KeyConditionExpression: 'GSI1PK = :gsi1pk',
+      ExpressionAttributeValues: {
+        ':gsi1pk': buildActiveMembersPk(locationId),
+      },
+    });
+  } catch (error) {
+    throw new Error(`Failed to get active members: ${error.message}`);
   }
 }
