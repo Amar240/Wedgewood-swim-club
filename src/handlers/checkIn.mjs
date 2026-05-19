@@ -9,21 +9,77 @@ const REQUIRED_FIELDS = [
   'numGuests',
 ];
 
-function getMissingFields(body) {
+function hasValue(value) {
+  return value !== undefined && value !== null && value !== '';
+}
+
+function cleanString(value) {
+  return typeof value === 'string' ? value.trim() : value;
+}
+
+function getHeader(req, name) {
+  return req.get?.(name) ?? req.headers?.[name.toLowerCase()];
+}
+
+function getMembershipName(body) {
+  const oldMembershipName = cleanString(body?.membershipName);
+
+  if (hasValue(oldMembershipName)) {
+    return oldMembershipName;
+  }
+
+  return [
+    cleanString(body?.first_name),
+    cleanString(body?.last_name),
+  ].filter(hasValue).join(' ');
+}
+
+function normalizeRequest(body) {
+  return {
+    membershipName: getMembershipName(body),
+    email: cleanString(body?.email),
+    phone: cleanString(body?.phone),
+    numAttending: body?.numAttending ?? body?.num_attending,
+    numGuests: body?.numGuests ?? body?.num_guests,
+    locationId: cleanString(body?.location_id) || process.env.GHL_LOCATION_ID,
+    membershipNameFromForm: cleanString(body?.membership_name),
+    guestPass: cleanString(body?.guest_pass),
+    formType: cleanString(body?.form_type),
+  };
+}
+
+function getMissingFields(payload) {
   return REQUIRED_FIELDS.filter((field) => {
-    const value = body?.[field];
-    return value === undefined || value === null || value === '';
+    return !hasValue(payload?.[field]);
   });
 }
 
 export async function checkInHandler(req, res, next) {
   try {
-    const missingFields = getMissingFields(req.body);
+    const webhookSecret = process.env.WEBHOOK_SECRET;
+
+    if (webhookSecret && getHeader(req, 'X-Webhook-Secret') !== webhookSecret) {
+      return res.status(401).json({
+        valid: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const payload = normalizeRequest(req.body);
+
+    if (payload.formType && payload.formType !== 'pool_signin') {
+      return res.status(400).json({
+        valid: false,
+        message: 'Unsupported form type',
+      });
+    }
+
+    const missingFields = getMissingFields(payload);
 
     if (missingFields.length > 0) {
       return res.status(400).json({
-        error: 'Missing required fields',
-        missingFields,
+        valid: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`,
       });
     }
 
@@ -33,27 +89,33 @@ export async function checkInHandler(req, res, next) {
       email,
       numAttending,
       numGuests,
-    } = req.body;
-    const locationId = process.env.GHL_LOCATION_ID;
+      locationId,
+      membershipNameFromForm,
+      guestPass,
+      formType,
+    } = payload;
 
     if (!locationId) {
-      throw new Error('Missing required environment variable: GHL_LOCATION_ID');
+      return res.status(400).json({
+        valid: false,
+        message: 'Missing required fields: locationId',
+      });
     }
 
     const member = await getMember(locationId, email);
-    const eventPhone = phone || member?.phone;
+    const eventPhone = hasValue(phone) ? phone : member?.phone;
 
     if (!member) {
       return res.status(404).json({
-        error: 'Member not found',
+        valid: false,
         message: 'Please sign up or see staff',
       });
     }
 
     if (!eventPhone) {
       return res.status(400).json({
-        error: 'Missing required fields',
-        missingFields: ['phone'],
+        valid: false,
+        message: 'Missing required fields: phone',
       });
     }
 
@@ -65,14 +127,14 @@ export async function checkInHandler(req, res, next) {
 
     if (alreadyCheckedIn) {
       return res.status(409).json({
-        error: 'Already checked in',
+        valid: false,
         message: 'Please sign out first',
       });
     }
 
     if (Number(numAttending) > Number(member.maxMembers)) {
       return res.status(403).json({
-        error: 'Exceeds membership limit',
+        valid: false,
         message: `Your plan allows ${member.maxMembers} members`,
       });
     }
@@ -84,20 +146,19 @@ export async function checkInHandler(req, res, next) {
       'check_in',
       numAttending,
       numGuests,
+      {
+        membershipNameFromForm,
+        guestPass,
+        formType,
+      },
     );
 
     return res.status(200).json({
-      success: true,
-      message: 'Check-in recorded successfully',
-      data: {
-        membershipName,
-        phone: eventPhone,
-        email,
-        numAttending,
-        numGuests,
-        type: 'check_in',
-        timestamp: new Date().toISOString(),
-      },
+      valid: true,
+      message: `Welcome ${membershipName}!`,
+      membershipType: member.membershipType,
+      maxMembers: member.maxMembers,
+      familyMembers: member.familyTextRaw ?? null,
     });
   } catch (error) {
     return next(error);

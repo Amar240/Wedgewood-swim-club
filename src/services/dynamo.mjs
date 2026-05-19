@@ -45,6 +45,10 @@ function buildActiveMembersPk(locationId) {
   return `LOC#${locationId}#ACTIVE`;
 }
 
+function hasMetadataValue(value) {
+  return value !== undefined && value !== null && value !== '';
+}
+
 async function queryAllPages(commandInput) {
   const items = [];
   let exclusiveStartKey;
@@ -71,6 +75,7 @@ export async function writeCheckInEvent(
   type,
   numAttending,
   numGuests,
+  metadata = {},
 ) {
   try {
     const tableName = requireEnv('DYNAMO_TABLE_NAME');
@@ -90,6 +95,18 @@ export async function writeCheckInEvent(
       item.GSI1SK = phone;
       item.numAttending = numAttending;
       item.numGuests = numGuests;
+
+      if (hasMetadataValue(metadata.membershipNameFromForm)) {
+        item.membershipNameFromForm = metadata.membershipNameFromForm;
+      }
+
+      if (hasMetadataValue(metadata.guestPass)) {
+        item.guestPass = metadata.guestPass;
+      }
+
+      if (hasMetadataValue(metadata.formType)) {
+        item.formType = metadata.formType;
+      }
     }
 
     await getDocumentClient().send(
