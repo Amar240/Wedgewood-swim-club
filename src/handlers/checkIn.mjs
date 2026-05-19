@@ -4,7 +4,6 @@ import { isAlreadyCheckedIn } from '../utils/stateCheck.mjs';
 
 const REQUIRED_FIELDS = [
   'membershipName',
-  'phone',
   'email',
   'numAttending',
   'numGuests',
@@ -41,25 +40,33 @@ export async function checkInHandler(req, res, next) {
       throw new Error('Missing required environment variable: GHL_LOCATION_ID');
     }
 
+    const member = await getMember(locationId, email);
+    const eventPhone = phone || member?.phone;
+
+    if (!member) {
+      return res.status(404).json({
+        error: 'Member not found',
+        message: 'Please sign up or see staff',
+      });
+    }
+
+    if (!eventPhone) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        missingFields: ['phone'],
+      });
+    }
+
     const alreadyCheckedIn = await isAlreadyCheckedIn(
       locationId,
       membershipName,
-      phone,
+      eventPhone,
     );
 
     if (alreadyCheckedIn) {
       return res.status(409).json({
         error: 'Already checked in',
         message: 'Please sign out first',
-      });
-    }
-
-    const member = await getMember(locationId, membershipName, phone);
-
-    if (!member) {
-      return res.status(404).json({
-        error: 'Member not found',
-        message: 'Please sign up or see staff',
       });
     }
 
@@ -73,7 +80,7 @@ export async function checkInHandler(req, res, next) {
     await writeCheckInEvent(
       locationId,
       membershipName,
-      phone,
+      eventPhone,
       'check_in',
       numAttending,
       numGuests,
@@ -84,7 +91,7 @@ export async function checkInHandler(req, res, next) {
       message: 'Check-in recorded successfully',
       data: {
         membershipName,
-        phone,
+        phone: eventPhone,
         email,
         numAttending,
         numGuests,

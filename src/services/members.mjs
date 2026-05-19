@@ -28,11 +28,15 @@ function getDocumentClient() {
 }
 
 function buildMemberPk(locationId) {
-  return `LOCATION#${locationId}`;
+  return `LOC#${locationId}`;
 }
 
-function buildMemberSk(membershipName, phone) {
-  return `MEMBERSHIP#${membershipName}#PHONE#${phone}`;
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function buildMemberSk(email) {
+  return `MEMBER#${normalizeEmail(email)}`;
 }
 
 export async function writeMember(
@@ -47,13 +51,14 @@ export async function writeMember(
   try {
     const tableName = requireEnv('MEMBERS_TABLE_NAME');
     const timestamp = new Date().toISOString();
+    const normalizedEmail = normalizeEmail(email);
     const item = {
       pk: buildMemberPk(locationId),
-      sk: buildMemberSk(membershipName, phone),
+      sk: buildMemberSk(normalizedEmail),
       locationId,
       membershipName,
       phone,
-      email,
+      email: normalizedEmail,
       membershipType,
       maxMembers,
       familyMembers,
@@ -73,7 +78,7 @@ export async function writeMember(
   }
 }
 
-export async function getMember(locationId, membershipName, phone) {
+export async function getMember(locationId, email) {
   try {
     const tableName = requireEnv('MEMBERS_TABLE_NAME');
     const result = await getDocumentClient().send(
@@ -82,7 +87,7 @@ export async function getMember(locationId, membershipName, phone) {
         KeyConditionExpression: 'pk = :pk AND sk = :sk',
         ExpressionAttributeValues: {
           ':pk': buildMemberPk(locationId),
-          ':sk': buildMemberSk(membershipName, phone),
+          ':sk': buildMemberSk(email),
         },
         Limit: 1,
       }),
@@ -94,9 +99,9 @@ export async function getMember(locationId, membershipName, phone) {
   }
 }
 
-export async function memberExists(locationId, membershipName, phone) {
+export async function memberExists(locationId, email) {
   try {
-    const member = await getMember(locationId, membershipName, phone);
+    const member = await getMember(locationId, email);
     return Boolean(member);
   } catch (error) {
     throw new Error(`Failed to check member existence: ${error.message}`);

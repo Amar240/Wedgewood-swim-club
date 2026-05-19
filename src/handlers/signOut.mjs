@@ -2,7 +2,7 @@ import { writeCheckInEvent } from '../services/dynamo.mjs';
 import { getMember } from '../services/members.mjs';
 import { isAlreadyCheckedIn } from '../utils/stateCheck.mjs';
 
-const REQUIRED_FIELDS = ['membershipName', 'phone'];
+const REQUIRED_FIELDS = ['membershipName', 'email', 'phone'];
 
 function getMissingFields(body) {
   return REQUIRED_FIELDS.filter((field) => {
@@ -22,14 +22,14 @@ export async function signOutHandler(req, res, next) {
       });
     }
 
-    const { membershipName, phone } = req.body;
+    const { membershipName, email, phone } = req.body;
     const locationId = process.env.GHL_LOCATION_ID;
 
     if (!locationId) {
       throw new Error('Missing required environment variable: GHL_LOCATION_ID');
     }
 
-    const member = await getMember(locationId, membershipName, phone);
+    const member = await getMember(locationId, email);
 
     if (!member) {
       return res.status(404).json({
