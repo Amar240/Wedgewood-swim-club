@@ -1,4 +1,5 @@
 import { writeCheckInEvent } from '../services/dynamo.mjs';
+import { getMember } from '../services/members.mjs';
 import { isAlreadyCheckedIn } from '../utils/stateCheck.mjs';
 
 const REQUIRED_FIELDS = [
@@ -46,6 +47,22 @@ export async function checkInHandler(req, res, next) {
       return res.status(409).json({
         error: 'Already checked in',
         message: 'Please sign out first',
+      });
+    }
+
+    const member = await getMember(locationId, membershipName, phone);
+
+    if (!member) {
+      return res.status(404).json({
+        error: 'Member not found',
+        message: 'Please sign up or see staff',
+      });
+    }
+
+    if (Number(numAttending) > Number(member.maxMembers)) {
+      return res.status(403).json({
+        error: 'Exceeds membership limit',
+        message: `Your plan allows ${member.maxMembers} members`,
       });
     }
 
