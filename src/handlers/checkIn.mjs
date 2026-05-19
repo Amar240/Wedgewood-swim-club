@@ -2,13 +2,6 @@ import { writeCheckInEvent } from '../services/dynamo.mjs';
 import { getMember } from '../services/members.mjs';
 import { isAlreadyCheckedIn } from '../utils/stateCheck.mjs';
 
-const REQUIRED_FIELDS = [
-  'membershipName',
-  'email',
-  'numAttending',
-  'numGuests',
-];
-
 function hasValue(value) {
   return value !== undefined && value !== null && value !== '';
 }
@@ -35,12 +28,15 @@ function getMembershipName(body) {
 }
 
 function normalizeRequest(body) {
+  const rawNumAttending = body?.numAttending ?? body?.num_attending;
+  const rawNumGuests = body?.numGuests ?? body?.num_guests;
+
   return {
     membershipName: getMembershipName(body),
     email: cleanString(body?.email),
     phone: cleanString(body?.phone),
-    numAttending: body?.numAttending ?? body?.num_attending,
-    numGuests: body?.numGuests ?? body?.num_guests,
+    numAttending: hasValue(rawNumAttending) ? rawNumAttending : 1,
+    numGuests: hasValue(rawNumGuests) ? rawNumGuests : 0,
     locationId: cleanString(body?.location_id) || process.env.GHL_LOCATION_ID,
     membershipNameFromForm: cleanString(body?.membership_name),
     guestPass: cleanString(body?.guest_pass),
@@ -49,9 +45,17 @@ function normalizeRequest(body) {
 }
 
 function getMissingFields(payload) {
-  return REQUIRED_FIELDS.filter((field) => {
-    return !hasValue(payload?.[field]);
-  });
+  const missingFields = [];
+
+  if (!hasValue(payload?.locationId)) {
+    missingFields.push('locationId');
+  }
+
+  if (!hasValue(payload?.email) && !hasValue(payload?.phone)) {
+    missingFields.push('email or phone');
+  }
+
+  return missingFields;
 }
 
 export async function checkInHandler(req, res, next) {
@@ -95,15 +99,11 @@ export async function checkInHandler(req, res, next) {
       formType,
     } = payload;
 
-    if (!locationId) {
-      return res.status(400).json({
-        valid: false,
-        message: 'Missing required fields: locationId',
-      });
-    }
-
-    const member = await getMember(locationId, email);
+    const member = hasValue(email) ? await getMember(locationId, email) : null;
     const eventPhone = hasValue(phone) ? phone : member?.phone;
+    const eventMembershipName = hasValue(membershipName)
+      ? membershipName
+      : member?.membershipName;
 
     if (!member) {
       return res.status(404).json({
@@ -121,7 +121,7 @@ export async function checkInHandler(req, res, next) {
 
     const alreadyCheckedIn = await isAlreadyCheckedIn(
       locationId,
-      membershipName,
+      eventMembershipName,
       eventPhone,
     );
 
@@ -141,7 +141,7 @@ export async function checkInHandler(req, res, next) {
 
     await writeCheckInEvent(
       locationId,
-      membershipName,
+      eventMembershipName,
       eventPhone,
       'check_in',
       numAttending,
@@ -155,7 +155,7 @@ export async function checkInHandler(req, res, next) {
 
     return res.status(200).json({
       valid: true,
-      message: `Welcome ${membershipName}!`,
+      message: `Welcome ${eventMembershipName}!`,
       membershipType: member.membershipType,
       maxMembers: member.maxMembers,
       familyMembers: member.familyTextRaw ?? null,
