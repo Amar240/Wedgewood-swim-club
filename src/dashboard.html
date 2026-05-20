@@ -1,0 +1,1305 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    >
+    <title>Wedgewood Pool Front Desk</title>
+    <style>
+      :root {
+        --teal: #2196F3;
+        --navy: #1B3A5C;
+        --aqua: #E8F4F8;
+        --white: #FFFFFF;
+        --success: #2E7D32;
+        --warning: #D32F2F;
+        --yellow: #FFF8E1;
+        --text: #1A1A1A;
+        --muted: #587083;
+        --shadow: 0 18px 44px rgba(27, 58, 92, 0.16);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: manipulation;
+      }
+
+      body {
+        min-height: 100dvh;
+        color: var(--text);
+        background:
+          linear-gradient(180deg, rgba(232, 244, 248, 0.98), rgba(255, 255, 255, 0.72)),
+          repeating-linear-gradient(135deg, rgba(33, 150, 243, 0.055) 0 18px, transparent 18px 42px);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        font-size: 24px;
+        -webkit-font-smoothing: antialiased;
+        -webkit-text-size-adjust: 100%;
+      }
+
+      button,
+      input {
+        font: inherit;
+        touch-action: manipulation;
+      }
+
+      button {
+        min-height: 44px;
+        border: 0;
+        cursor: pointer;
+      }
+
+      .app {
+        display: grid;
+        grid-template-rows: 60px minmax(270px, 40vh) minmax(0, 1fr);
+        gap: 18px;
+        width: 100%;
+        height: 100dvh;
+        padding: 0 22px 22px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 60px;
+        margin: 0 -22px;
+        padding: 0 calc(22px + env(safe-area-inset-right)) 0 calc(22px + env(safe-area-inset-left));
+        color: var(--white);
+        background: linear-gradient(115deg, var(--navy), #176CA7 62%, var(--teal));
+        box-shadow: 0 7px 20px rgba(27, 58, 92, 0.18);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .brand img {
+        width: 48px;
+        height: 48px;
+        flex: 0 0 auto;
+        object-fit: contain;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.92);
+      }
+
+      .brand-title {
+        overflow: hidden;
+        font-size: 24px;
+        font-weight: 800;
+        line-height: 1.05;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .status-cluster {
+        display: grid;
+        gap: 2px;
+        justify-items: end;
+        flex: 0 0 auto;
+      }
+
+      .clock {
+        font-variant-numeric: tabular-nums;
+        font-size: 22px;
+        font-weight: 800;
+      }
+
+      .connection {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #7CB342;
+        box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.18);
+      }
+
+      .connection.reconnecting .dot {
+        background: #FBC02D;
+        box-shadow: 0 0 0 3px rgba(251, 192, 45, 0.22);
+      }
+
+      .connection.offline .dot {
+        background: var(--warning);
+        box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2);
+      }
+
+      .moment-card {
+        position: relative;
+        display: grid;
+        min-height: 0;
+        padding: 30px 34px;
+        overflow: hidden;
+        color: var(--navy);
+        background: rgba(255, 255, 255, 0.96);
+        border: 2px solid rgba(33, 150, 243, 0.2);
+        border-radius: 30px;
+        box-shadow: var(--shadow);
+        transition: opacity 180ms ease, border-color 180ms ease, background 180ms ease;
+      }
+
+      .moment-card::before {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        content: "";
+        background: linear-gradient(120deg, rgba(33, 150, 243, 0.12), transparent 44%);
+      }
+
+      .moment-card.dimmed {
+        opacity: 0.7;
+      }
+
+      .moment-card.check-in {
+        border-color: rgba(46, 125, 50, 0.34);
+        animation: tealFlash 200ms ease-out;
+      }
+
+      .moment-card.failed {
+        color: var(--warning);
+        background: #FFF4F4;
+        border-color: rgba(211, 47, 47, 0.54);
+        animation: redPulse 1.8s ease-in-out infinite;
+      }
+
+      .moment-content {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        min-height: 100%;
+        text-align: center;
+      }
+
+      .moment-kicker {
+        margin-bottom: 10px;
+        color: var(--muted);
+        font-size: 24px;
+        font-weight: 800;
+      }
+
+      .moment-card.failed .moment-kicker {
+        color: var(--warning);
+      }
+
+      .moment-title {
+        max-width: 980px;
+        margin: 0;
+        font-size: 56px;
+        font-weight: 900;
+        line-height: 1.04;
+        letter-spacing: 0;
+      }
+
+      .member-name {
+        display: block;
+        margin-top: 8px;
+        color: var(--text);
+        font-size: 64px;
+        font-weight: 950;
+        line-height: 1.02;
+      }
+
+      .moment-subtitle {
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 28px;
+        font-weight: 750;
+      }
+
+      .swimmer-line {
+        margin-top: 18px;
+        color: var(--navy);
+        font-size: 30px;
+        font-weight: 850;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .avatar {
+        display: grid;
+        width: 86px;
+        height: 86px;
+        margin: 0 auto 14px;
+        place-items: center;
+        color: var(--white);
+        background: linear-gradient(145deg, var(--teal), var(--navy));
+        border-radius: 50%;
+        font-size: 30px;
+        font-weight: 900;
+        box-shadow: 0 10px 24px rgba(27, 58, 92, 0.22);
+      }
+
+      .soft-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        margin-top: 18px;
+        padding: 8px 18px;
+        color: var(--navy);
+        background: var(--aqua);
+        border-radius: 999px;
+        font-size: 20px;
+        font-weight: 850;
+      }
+
+      .failed-actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 24px;
+      }
+
+      .primary-button {
+        min-height: 56px;
+        padding: 0 24px;
+        color: var(--white);
+        background: var(--teal);
+        border-radius: 16px;
+        font-size: 24px;
+        font-weight: 900;
+        box-shadow: 0 10px 20px rgba(33, 150, 243, 0.24);
+      }
+
+      .failed .primary-button {
+        background: var(--warning);
+        box-shadow: 0 10px 20px rgba(211, 47, 47, 0.2);
+      }
+
+      .last-updated {
+        position: absolute;
+        right: 24px;
+        bottom: 16px;
+        z-index: 2;
+        color: var(--muted);
+        font-size: 17px;
+        font-weight: 800;
+      }
+
+      .search-zone {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        min-height: 0;
+      }
+
+      .search-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 10px;
+        color: var(--navy);
+        font-size: 26px;
+        font-weight: 900;
+      }
+
+      .search-message {
+        color: var(--muted);
+        font-size: 18px;
+        font-weight: 750;
+        text-align: right;
+      }
+
+      .search-box {
+        position: relative;
+        display: grid;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 22px;
+        z-index: 1;
+        color: var(--navy);
+        font-size: 25px;
+      }
+
+      .search-input {
+        width: 100%;
+        min-height: 70px;
+        padding: 0 24px 0 62px;
+        color: var(--text);
+        background: var(--white);
+        border: 3px solid var(--navy);
+        border-radius: 20px;
+        outline: none;
+        font-size: 24px;
+        font-weight: 800;
+        box-shadow: 0 10px 28px rgba(27, 58, 92, 0.12);
+      }
+
+      .search-input:focus {
+        border-color: var(--teal);
+        box-shadow: 0 0 0 5px rgba(33, 150, 243, 0.18), 0 10px 28px rgba(27, 58, 92, 0.12);
+      }
+
+      .results {
+        display: grid;
+        gap: 10px;
+        min-height: 0;
+        padding-right: 3px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .result-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        width: 100%;
+        min-height: 76px;
+        padding: 14px 16px;
+        color: var(--text);
+        text-align: left;
+        background: rgba(255, 255, 255, 0.94);
+        border: 2px solid rgba(27, 58, 92, 0.1);
+        border-radius: 18px;
+        box-shadow: 0 8px 20px rgba(27, 58, 92, 0.08);
+      }
+
+      .result-row:active {
+        transform: scale(0.992);
+      }
+
+      .result-name {
+        overflow: hidden;
+        color: var(--navy);
+        font-size: 24px;
+        font-weight: 950;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .result-meta,
+      .result-family {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 18px;
+        font-weight: 750;
+        line-height: 1.24;
+      }
+
+      .result-family {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .badge {
+        align-self: start;
+        min-width: 96px;
+        padding: 8px 12px;
+        color: var(--navy);
+        background: var(--aqua);
+        border-radius: 999px;
+        font-size: 16px;
+        font-weight: 950;
+        text-align: center;
+      }
+
+      .badge.active {
+        color: var(--white);
+        background: var(--success);
+      }
+
+      .empty-state,
+      .search-error {
+        padding: 20px;
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.78);
+        border: 2px dashed rgba(27, 58, 92, 0.18);
+        border-radius: 18px;
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1.3;
+      }
+
+      .search-error {
+        color: var(--warning);
+        background: #FFF4F4;
+        border-color: rgba(211, 47, 47, 0.28);
+      }
+
+      .pin-overlay,
+      .detail-panel {
+        position: fixed;
+        z-index: 20;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgba(27, 58, 92, 0.72);
+        backdrop-filter: blur(8px);
+      }
+
+      .pin-card {
+        width: min(520px, 94vw);
+        padding: 30px;
+        color: var(--navy);
+        background: var(--white);
+        border-radius: 28px;
+        box-shadow: var(--shadow);
+        text-align: center;
+      }
+
+      .pin-card h1 {
+        margin: 0 0 10px;
+        font-size: 36px;
+        line-height: 1.1;
+      }
+
+      .pin-card p {
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 21px;
+        font-weight: 750;
+      }
+
+      .pin-input {
+        width: 100%;
+        min-height: 66px;
+        margin-bottom: 14px;
+        color: var(--text);
+        border: 3px solid var(--navy);
+        border-radius: 18px;
+        font-size: 30px;
+        font-weight: 900;
+        letter-spacing: 0.28em;
+        text-align: center;
+      }
+
+      .pin-message {
+        min-height: 28px;
+        margin-bottom: 8px;
+        color: var(--warning);
+        font-size: 19px;
+        font-weight: 850;
+      }
+
+      .detail-panel {
+        align-items: end;
+        background: rgba(27, 58, 92, 0.42);
+      }
+
+      .detail-card {
+        width: min(760px, 96vw);
+        padding: 28px;
+        color: var(--text);
+        background: var(--white);
+        border-radius: 30px 30px 0 0;
+        box-shadow: var(--shadow);
+      }
+
+      .detail-card h2 {
+        margin: 0 0 12px;
+        color: var(--success);
+        font-size: 34px;
+        line-height: 1.12;
+      }
+
+      .detail-card p {
+        margin: 8px 0;
+        color: var(--muted);
+        font-size: 22px;
+        font-weight: 760;
+      }
+
+      .detail-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 20px;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @keyframes tealFlash {
+        from {
+          background: #DDF4FF;
+          transform: translateY(-6px);
+        }
+
+        to {
+          background: rgba(255, 255, 255, 0.96);
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes redPulse {
+        0%,
+        100% {
+          box-shadow: 0 18px 44px rgba(211, 47, 47, 0.18);
+        }
+
+        50% {
+          box-shadow: 0 18px 54px rgba(211, 47, 47, 0.32);
+        }
+      }
+
+      @media (max-height: 720px) {
+        body {
+          font-size: 21px;
+        }
+
+        .app {
+          gap: 12px;
+          padding-bottom: 14px;
+        }
+
+        .moment-card {
+          padding: 22px 28px;
+        }
+
+        .moment-title {
+          font-size: 46px;
+        }
+
+        .member-name {
+          font-size: 54px;
+        }
+
+        .search-input {
+          min-height: 62px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app" aria-live="polite">
+      <header class="topbar">
+        <div class="brand">
+          <img
+            src="https://assets.cdn.filesafe.space/Bjt6c984XN3YKY5porzI/media/6980bb3566e7ca30baf9488c.png"
+            alt="Wedgewood Swim Club logo"
+          >
+          <div class="brand-title">Welcome to Wedgewood Pool!</div>
+        </div>
+        <div class="status-cluster">
+          <div id="clock" class="clock">--:--</div>
+          <div id="connection" class="connection">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="connectionText">Live</span>
+          </div>
+        </div>
+      </header>
+
+      <main id="momentCard" class="moment-card idle">
+        <div id="momentContent" class="moment-content"></div>
+        <div id="lastUpdated" class="last-updated" hidden></div>
+      </main>
+
+      <section class="search-zone" aria-label="Member search">
+        <div class="search-label">
+          <span>Look someone up</span>
+          <span id="searchMessage" class="search-message"></span>
+        </div>
+        <div class="search-box">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input
+            id="searchInput"
+            class="search-input"
+            autocomplete="off"
+            autocapitalize="words"
+            spellcheck="false"
+            type="search"
+            placeholder="Type a name to look someone up"
+          >
+        </div>
+        <div id="searchResults" class="results"></div>
+      </section>
+    </div>
+
+    <div id="pinOverlay" class="pin-overlay">
+      <form id="pinForm" class="pin-card">
+        <h1>Staff PIN</h1>
+        <p>Open the front desk screen.</p>
+        <input
+          id="pinInput"
+          class="pin-input"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          maxlength="4"
+          autocomplete="off"
+          aria-label="Staff PIN"
+        >
+        <div id="pinMessage" class="pin-message"></div>
+        <button class="primary-button" type="submit">Open dashboard</button>
+      </form>
+    </div>
+
+    <div id="detailPanel" class="detail-panel" hidden>
+      <div class="detail-card">
+        <div id="detailContent"></div>
+        <div class="detail-actions">
+          <button id="closeDetail" class="primary-button" type="button">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = 'https://bu92wt7vt5.us-east-2.awsapprunner.com';
+      const LOCATION_ID = 'Bjt6c984XN3YKY5porzI';
+      const POLL_INTERVAL_MS = 3000;
+      const IDLE_TIMEOUT_MS = 1800000;
+      const MOMENT_HOLD_MS = 8000;
+      const OFFLINE_DIM_MS = 60000;
+      const SIGNUP_HELP = "Looks like they aren't a member yet — direct them to wedgewoodpool.com/memberships to sign up";
+
+      const idleLines = [
+        'Quiet right now',
+        'Make sure to say hi!',
+        'High five the next person to walk in',
+        'Blue skies, pool smiles'
+      ];
+
+      const state = {
+        dashboardPin: '',
+        pollTimer: null,
+        clockTimer: null,
+        idleLineTimer: null,
+        idleCheckTimer: null,
+        offlineDimTimer: null,
+        wakeLock: null,
+        audioContext: null,
+        failedPolls: 0,
+        currentDelay: POLL_INTERVAL_MS,
+        lastSuccessfulAt: null,
+        lastInteractionAt: Date.now(),
+        firstPoll: true,
+        swimmerCount: 0,
+        last5: [],
+        activeMembers: [],
+        seenEventKeys: new Set(),
+        seenEventOrder: [],
+        currentMomentUntil: 0,
+        failedMoment: null,
+        idleLineIndex: 0,
+        searchDebounce: null,
+        searchMode: 'normal',
+        lastSearchResults: []
+      };
+
+      const el = {
+        clock: document.getElementById('clock'),
+        connection: document.getElementById('connection'),
+        connectionText: document.getElementById('connectionText'),
+        momentCard: document.getElementById('momentCard'),
+        momentContent: document.getElementById('momentContent'),
+        lastUpdated: document.getElementById('lastUpdated'),
+        searchInput: document.getElementById('searchInput'),
+        searchResults: document.getElementById('searchResults'),
+        searchMessage: document.getElementById('searchMessage'),
+        pinOverlay: document.getElementById('pinOverlay'),
+        pinForm: document.getElementById('pinForm'),
+        pinInput: document.getElementById('pinInput'),
+        pinMessage: document.getElementById('pinMessage'),
+        detailPanel: document.getElementById('detailPanel'),
+        detailContent: document.getElementById('detailContent'),
+        closeDetail: document.getElementById('closeDetail')
+      };
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        })[character]);
+      }
+
+      function formatTime(value = new Date()) {
+        const date = value instanceof Date ? value : new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+          return '--:--';
+        }
+
+        return date.toLocaleTimeString([], {
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+      }
+
+      function pluralize(count, singular, plural = `${singular}s`) {
+        return Number(count) === 1 ? singular : plural;
+      }
+
+      function normalizePhone(value) {
+        return String(value ?? '').replace(/\D/g, '');
+      }
+
+      function initialsFor(name) {
+        const parts = String(name ?? '')
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean);
+
+        return (parts[0]?.[0] ?? '?') + (parts[1]?.[0] ?? '');
+      }
+
+      function eventKey(event) {
+        return [
+          event?.type ?? '',
+          event?.membershipName ?? '',
+          event?.timestamp ?? '',
+          event?.numAttending ?? '',
+          event?.numGuests ?? ''
+        ].join('|');
+      }
+
+      function rememberEvent(event) {
+        const key = eventKey(event);
+
+        if (!key || state.seenEventKeys.has(key)) {
+          return;
+        }
+
+        state.seenEventKeys.add(key);
+        state.seenEventOrder.push(key);
+
+        while (state.seenEventOrder.length > 100) {
+          const oldKey = state.seenEventOrder.shift();
+          state.seenEventKeys.delete(oldKey);
+        }
+      }
+
+      function isFailedEvent(event) {
+        const type = String(event?.type ?? '').toLowerCase();
+        return type.includes('fail') || type === 'error' || type === 'not_found';
+      }
+
+      function getEventName(event) {
+        return event?.membershipName || event?.attemptedName || event?.name || 'Someone';
+      }
+
+      function setMomentMode(mode) {
+        el.momentCard.classList.remove('idle', 'check-in', 'failed');
+        el.momentCard.classList.add(mode);
+      }
+
+      function getSwimmerLine() {
+        const count = Number(state.swimmerCount) || 0;
+        return `${count} ${pluralize(count, 'swimmer')} in the pool right now`;
+      }
+
+      function renderIdle() {
+        if (state.failedMoment || Date.now() < state.currentMomentUntil) {
+          return;
+        }
+
+        const line = idleLines[state.idleLineIndex % idleLines.length];
+        setMomentMode('idle');
+        el.momentContent.innerHTML = `
+          <div>
+            <div class="moment-kicker">🌊 ${escapeHtml(line)}</div>
+            <h1 class="moment-title">${escapeHtml(getSwimmerLine())}</h1>
+            <p class="moment-subtitle">Easy day at the front gate.</p>
+          </div>
+        `;
+      }
+
+      function renderCheckIn(event) {
+        const name = getEventName(event);
+        const attending = Number(event?.numAttending);
+        const familyText = Number.isFinite(attending) && attending > 0
+          ? `${attending} ${pluralize(attending, 'person')} on this visit`
+          : 'Welcome them';
+
+        state.failedMoment = null;
+        state.currentMomentUntil = Date.now() + MOMENT_HOLD_MS;
+        setMomentMode('check-in');
+        el.momentContent.innerHTML = `
+          <div>
+            <div class="avatar" aria-hidden="true">${escapeHtml(initialsFor(name))}</div>
+            <div class="moment-kicker">👋 Just signed in!</div>
+            <h1 class="moment-title">
+              <span class="member-name">${escapeHtml(name)}</span>
+            </h1>
+            <p class="moment-subtitle">Welcome them</p>
+            <div class="soft-pill">${escapeHtml(familyText)}</div>
+          </div>
+        `;
+
+        playChime('check-in');
+        window.setTimeout(renderIdle, MOMENT_HOLD_MS);
+      }
+
+      function renderFailed(event) {
+        const name = getEventName(event);
+
+        state.failedMoment = event;
+        state.currentMomentUntil = Number.POSITIVE_INFINITY;
+        setMomentMode('failed');
+        el.momentContent.innerHTML = `
+          <div>
+            <div class="moment-kicker">❗ Couldn't find them — please help</div>
+            <h1 class="moment-title">
+              <span class="member-name">"${escapeHtml(name)}"</span>
+              tried to check in
+            </h1>
+            <div class="failed-actions">
+              <button class="primary-button search-failed-button" type="button" data-name="${escapeHtml(name)}">
+                Search for them →
+              </button>
+            </div>
+          </div>
+        `;
+
+        playChime('failed');
+      }
+
+      function processEvents(events) {
+        const newEvents = events.filter((event) => !state.seenEventKeys.has(eventKey(event)));
+
+        events.forEach(rememberEvent);
+
+        if (state.firstPoll) {
+          state.firstPoll = false;
+          return;
+        }
+
+        const momentEvent = newEvents.find((event) => isFailedEvent(event) || event.type === 'check_in');
+
+        if (!momentEvent) {
+          return;
+        }
+
+        if (isFailedEvent(momentEvent)) {
+          renderFailed(momentEvent);
+          return;
+        }
+
+        if (!state.failedMoment) {
+          renderCheckIn(momentEvent);
+        }
+      }
+
+      function updateClock() {
+        el.clock.textContent = formatTime();
+      }
+
+      function updateConnection(status) {
+        el.connection.classList.remove('reconnecting', 'offline');
+
+        if (status === 'offline') {
+          el.connection.classList.add('offline');
+          el.connectionText.textContent = 'Offline';
+          return;
+        }
+
+        if (status === 'reconnecting') {
+          el.connection.classList.add('reconnecting');
+          el.connectionText.textContent = 'Reconnecting';
+          return;
+        }
+
+        el.connectionText.textContent = 'Live';
+      }
+
+      function showLastUpdated() {
+        if (!state.lastSuccessfulAt) {
+          return;
+        }
+
+        el.momentCard.classList.add('dimmed');
+        el.lastUpdated.hidden = false;
+        el.lastUpdated.textContent = `Last updated ${formatTime(state.lastSuccessfulAt)}`;
+      }
+
+      function hideLastUpdated() {
+        el.momentCard.classList.remove('dimmed');
+        el.lastUpdated.hidden = true;
+      }
+
+      function handlePollSuccess(today, active) {
+        window.clearTimeout(state.offlineDimTimer);
+        state.failedPolls = 0;
+        state.currentDelay = POLL_INTERVAL_MS;
+        state.lastSuccessfulAt = new Date();
+        hideLastUpdated();
+        updateConnection('live');
+
+        const events = Array.isArray(today?.last5) ? today.last5 : [];
+        state.last5 = events;
+        state.activeMembers = Array.isArray(active?.members) ? active.members : [];
+        state.swimmerCount = Number(active?.currentlyInPool) || state.activeMembers.length || 0;
+
+        processEvents(events);
+        renderIdle();
+      }
+
+      function handlePollError(error) {
+        if (error.status === 401) {
+          showPinOverlay('That PIN did not work. Try again.');
+          return;
+        }
+
+        state.failedPolls += 1;
+        state.currentDelay = Math.min(30000, state.failedPolls <= 1 ? POLL_INTERVAL_MS : state.currentDelay * 2);
+
+        updateConnection(state.failedPolls >= 3 ? 'offline' : 'reconnecting');
+
+        if (state.failedPolls === 1) {
+          state.offlineDimTimer = window.setTimeout(showLastUpdated, OFFLINE_DIM_MS);
+        }
+      }
+
+      async function fetchJson(path) {
+        const response = await fetch(`${API_URL}${path}`, {
+          cache: 'no-store',
+          headers: {
+            'X-Dashboard-Token': state.dashboardPin
+          }
+        });
+
+        if (response.status === 401) {
+          const error = new Error('Unauthorized');
+          error.status = 401;
+          throw error;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Request failed with ${response.status}`);
+        }
+
+        return response.json();
+      }
+
+      async function pollDashboard() {
+        window.clearTimeout(state.pollTimer);
+
+        try {
+          const query = `location_id=${encodeURIComponent(LOCATION_ID)}`;
+          const [today, active] = await Promise.all([
+            fetchJson(`/dashboard/today?${query}`),
+            fetchJson(`/dashboard/active?${query}`)
+          ]);
+
+          handlePollSuccess(today, active);
+        } catch (error) {
+          handlePollError(error);
+        }
+
+        if (state.dashboardPin) {
+          state.pollTimer = window.setTimeout(pollDashboard, state.currentDelay);
+        }
+      }
+
+      function stopPolling() {
+        window.clearTimeout(state.pollTimer);
+        window.clearTimeout(state.offlineDimTimer);
+      }
+
+      function showPinOverlay(message = '') {
+        stopPolling();
+        state.dashboardPin = '';
+        el.pinMessage.textContent = message;
+        el.pinInput.value = '';
+        el.pinOverlay.hidden = false;
+        window.setTimeout(() => el.pinInput.focus(), 60);
+      }
+
+      function hidePinOverlay() {
+        el.pinOverlay.hidden = true;
+      }
+
+      async function unlockAudio() {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+        if (!AudioContextClass) {
+          return;
+        }
+
+        if (!state.audioContext) {
+          state.audioContext = new AudioContextClass();
+        }
+
+        if (state.audioContext.state === 'suspended') {
+          await state.audioContext.resume();
+        }
+
+        const oscillator = state.audioContext.createOscillator();
+        const gain = state.audioContext.createGain();
+        oscillator.connect(gain);
+        gain.connect(state.audioContext.destination);
+        gain.gain.setValueAtTime(0.0001, state.audioContext.currentTime);
+        oscillator.start();
+        oscillator.stop(state.audioContext.currentTime + 0.02);
+      }
+
+      function playChime(kind) {
+        if (!state.audioContext || state.audioContext.state !== 'running') {
+          return;
+        }
+
+        const now = state.audioContext.currentTime;
+        const frequencies = kind === 'failed' ? [220, 180] : [660, 880];
+
+        frequencies.forEach((frequency, index) => {
+          const oscillator = state.audioContext.createOscillator();
+          const gain = state.audioContext.createGain();
+          const start = now + (index * 0.09);
+
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(frequency, start);
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.exponentialRampToValueAtTime(0.08, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.18);
+
+          oscillator.connect(gain);
+          gain.connect(state.audioContext.destination);
+          oscillator.start(start);
+          oscillator.stop(start + 0.2);
+        });
+      }
+
+      async function requestWakeLock() {
+        try {
+          if ('wakeLock' in navigator && !state.wakeLock) {
+            state.wakeLock = await navigator.wakeLock.request('screen');
+            state.wakeLock.addEventListener('release', () => {
+              state.wakeLock = null;
+            });
+          }
+        } catch (error) {
+          state.wakeLock = null;
+        }
+      }
+
+      function isMemberActive(member) {
+        const memberPhone = normalizePhone(member.phone);
+        const memberName = String(member.membershipName ?? '').trim().toLowerCase();
+
+        return state.activeMembers.some((activeMember) => {
+          const activePhone = normalizePhone(activeMember.phone || activeMember.GSI1SK);
+          const activeName = String(activeMember.membershipName ?? '').trim().toLowerCase();
+          return (memberPhone && activePhone === memberPhone) || (memberName && activeName === memberName);
+        });
+      }
+
+      function getLastVisitText(member) {
+        if (isMemberActive(member)) {
+          return 'In the pool right now';
+        }
+
+        const memberName = String(member.membershipName ?? '').trim().toLowerCase();
+        const event = state.last5.find((item) => String(item.membershipName ?? '').trim().toLowerCase() === memberName);
+
+        if (event?.timestamp) {
+          return `Last seen today ${formatTime(event.timestamp)}`;
+        }
+
+        return 'Not in pool today';
+      }
+
+      function getFamilyText(member) {
+        return member.familyTextRaw || 'Family details not listed';
+      }
+
+      function renderSearchResults(matches) {
+        state.lastSearchResults = matches;
+
+        if (matches.length === 0) {
+          el.searchResults.innerHTML = `
+            <div class="${state.searchMode === 'failed' ? 'search-error' : 'empty-state'}">
+              ${escapeHtml(state.searchMode === 'failed' ? SIGNUP_HELP : 'No matches yet. Try a first or last name.')}
+            </div>
+          `;
+          return;
+        }
+
+        el.searchResults.innerHTML = matches.map((member, index) => {
+          const active = isMemberActive(member);
+          const status = active ? 'In pool' : member.membershipStatus || 'Member';
+
+          return `
+            <button class="result-row" type="button" data-index="${index}">
+              <span>
+                <span class="result-name">${escapeHtml(member.membershipName || 'Unnamed member')}</span>
+                <span class="result-meta">
+                  ${escapeHtml(member.membershipType || 'Membership')} · ${escapeHtml(member.phone || 'No phone listed')} · ${escapeHtml(getLastVisitText(member))}
+                </span>
+                <span class="result-family">${escapeHtml(getFamilyText(member))}</span>
+              </span>
+              <span class="badge${active ? ' active' : ''}">${escapeHtml(status)}</span>
+            </button>
+          `;
+        }).join('');
+      }
+
+      async function runSearch(rawQuery) {
+        const query = rawQuery.trim();
+
+        if (query.length < 2) {
+          state.lastSearchResults = [];
+          el.searchMessage.textContent = '';
+          el.searchResults.innerHTML = '';
+          return;
+        }
+
+        el.searchMessage.textContent = 'Looking...';
+
+        try {
+          const params = new URLSearchParams({
+            location_id: LOCATION_ID,
+            q: query
+          });
+          const result = await fetchJson(`/members/search?${params.toString()}`);
+          const matches = Array.isArray(result?.matches) ? result.matches : [];
+
+          el.searchMessage.textContent = matches.length > 0
+            ? `${matches.length} ${pluralize(matches.length, 'match')}`
+            : '';
+          renderSearchResults(matches);
+        } catch (error) {
+          if (error.status === 401) {
+            showPinOverlay('That PIN did not work. Try again.');
+            return;
+          }
+
+          el.searchMessage.textContent = '';
+          el.searchResults.innerHTML = `
+            <div class="search-error">Search is having a hard time. Try again in a moment.</div>
+          `;
+        }
+      }
+
+      function debounceSearch() {
+        window.clearTimeout(state.searchDebounce);
+        state.searchDebounce = window.setTimeout(() => runSearch(el.searchInput.value), 300);
+      }
+
+      function searchForFailedName(name) {
+        state.searchMode = 'failed';
+        el.searchInput.value = name;
+        el.searchInput.focus();
+        runSearch(name);
+      }
+
+      function showMemberDetail(member) {
+        el.detailContent.innerHTML = `
+          <h2>✅ Yes, ${escapeHtml(member.membershipName || 'this person')} is a member</h2>
+          <p>${escapeHtml(member.membershipType || 'Membership')} · ${escapeHtml(member.phone || 'No phone listed')}</p>
+          <p>${escapeHtml(getFamilyText(member))}</p>
+          <p>${escapeHtml(getLastVisitText(member))}</p>
+        `;
+        el.detailPanel.hidden = false;
+      }
+
+      function hideMemberDetail() {
+        el.detailPanel.hidden = true;
+      }
+
+      function recordInteraction() {
+        state.lastInteractionAt = Date.now();
+      }
+
+      function checkIdleTimeout() {
+        if (!state.dashboardPin) {
+          return;
+        }
+
+        if (Date.now() - state.lastInteractionAt >= IDLE_TIMEOUT_MS) {
+          showPinOverlay('Enter the PIN to keep going.');
+        }
+      }
+
+      function bindEvents() {
+        ['pointerdown', 'keydown', 'touchstart'].forEach((eventName) => {
+          window.addEventListener(eventName, recordInteraction, { passive: true });
+        });
+
+        el.pinForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const pin = el.pinInput.value.trim();
+
+          if (!/^\d{4}$/.test(pin)) {
+            el.pinMessage.textContent = 'Use the 4-digit staff PIN.';
+            return;
+          }
+
+          state.dashboardPin = pin;
+          recordInteraction();
+          await unlockAudio();
+          await requestWakeLock();
+          hidePinOverlay();
+          pollDashboard();
+        });
+
+        el.searchInput.addEventListener('input', () => {
+          state.searchMode = 'normal';
+          debounceSearch();
+        });
+
+        el.searchResults.addEventListener('click', (event) => {
+          const row = event.target.closest('.result-row');
+
+          if (!row) {
+            return;
+          }
+
+          const member = state.lastSearchResults[Number(row.dataset.index)];
+
+          if (member) {
+            showMemberDetail(member);
+          }
+        });
+
+        el.momentCard.addEventListener('click', (event) => {
+          const button = event.target.closest('.search-failed-button');
+
+          if (button) {
+            searchForFailedName(button.dataset.name || getEventName(state.failedMoment));
+          }
+        });
+
+        el.closeDetail.addEventListener('click', hideMemberDetail);
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            requestWakeLock();
+          }
+        });
+      }
+
+      function init() {
+        bindEvents();
+        updateClock();
+        renderIdle();
+        state.clockTimer = window.setInterval(updateClock, 10000);
+        state.idleLineTimer = window.setInterval(() => {
+          state.idleLineIndex += 1;
+          renderIdle();
+        }, MOMENT_HOLD_MS);
+        state.idleCheckTimer = window.setInterval(checkIdleTimeout, 60000);
+        showPinOverlay();
+      }
+
+      init();
+    </script>
+  </body>
+</html>

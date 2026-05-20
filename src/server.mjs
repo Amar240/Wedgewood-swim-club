@@ -18,6 +18,10 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 
 app.get('/health', healthHandler);
+// Dashboard is served same-origin from App Runner; add CORS middleware if it moves to another domain.
+app.get('/dashboard', (req, res) => {
+  return res.sendFile('dashboard.html', { root: './src' });
+});
 app.post('/checkin', checkInHandler);
 app.post('/signout', signOutHandler);
 app.get('/dashboard/today', todayHandler);

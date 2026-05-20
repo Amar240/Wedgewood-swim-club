@@ -84,6 +84,27 @@ function toNumber(value) {
   return Number.isFinite(numberValue) ? numberValue : 0;
 }
 
+function normalizePhone(value) {
+  return String(value ?? '').replace(/\D/g, '');
+}
+
+function matchesMemberSearch(item, query) {
+  const membershipName = String(item.membershipName ?? '').toLowerCase();
+  const queryTerms = query.split(/\s+/).filter((term) => term.length >= 2);
+  const queryDigits = normalizePhone(query);
+  const phoneDigits = normalizePhone(item.phone);
+
+  if (membershipName.includes(query)) {
+    return true;
+  }
+
+  if (queryTerms.some((term) => membershipName.includes(term))) {
+    return true;
+  }
+
+  return queryDigits.length >= 2 && phoneDigits.startsWith(queryDigits);
+}
+
 async function queryAllPages(commandInput) {
   const items = [];
   let exclusiveStartKey;
@@ -116,9 +137,7 @@ async function scanMemberMatches(commandInput, query) {
     );
 
     for (const item of result.Items ?? []) {
-      const membershipName = String(item.membershipName ?? '').toLowerCase();
-
-      if (membershipName.includes(query) && matches.length < SEARCH_LIMIT) {
+      if (matchesMemberSearch(item, query) && matches.length < SEARCH_LIMIT) {
         matches.push(item);
       }
     }
