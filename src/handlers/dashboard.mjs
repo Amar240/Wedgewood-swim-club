@@ -33,17 +33,16 @@ function getHeader(req, name) {
   return req.get?.(name) ?? req.headers?.[name.toLowerCase()];
 }
 
-function authorizeDashboard(req, res) {
+export function dashboardAuth(req, res, next) {
   const dashboardToken = process.env.DASHBOARD_TOKEN;
 
   if (dashboardToken && getHeader(req, 'X-Dashboard-Token') !== dashboardToken) {
-    res.status(401).json({
+    return res.status(401).json({
       error: 'Unauthorized',
     });
-    return false;
   }
 
-  return true;
+  return next();
 }
 
 function getLocationId(req, res) {
@@ -150,10 +149,6 @@ async function scanMemberMatches(commandInput, query) {
 
 export async function todayHandler(req, res, next) {
   try {
-    if (!authorizeDashboard(req, res)) {
-      return null;
-    }
-
     const locationId = getLocationId(req, res);
 
     if (!locationId) {
@@ -195,10 +190,6 @@ export async function todayHandler(req, res, next) {
 
 export async function activeHandler(req, res, next) {
   try {
-    if (!authorizeDashboard(req, res)) {
-      return null;
-    }
-
     const locationId = getLocationId(req, res);
 
     if (!locationId) {
@@ -231,10 +222,6 @@ export async function activeHandler(req, res, next) {
 
 export async function searchHandler(req, res, next) {
   try {
-    if (!authorizeDashboard(req, res)) {
-      return null;
-    }
-
     const locationId = getLocationId(req, res);
 
     if (!locationId) {

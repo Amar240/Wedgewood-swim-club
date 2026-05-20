@@ -4,6 +4,7 @@ import express from 'express';
 import { checkInHandler } from './handlers/checkIn.mjs';
 import {
   activeHandler,
+  dashboardAuth,
   searchHandler,
   todayHandler,
 } from './handlers/dashboard.mjs';
@@ -24,9 +25,9 @@ app.get('/dashboard', (req, res) => {
 });
 app.post('/checkin', checkInHandler);
 app.post('/signout', signOutHandler);
-app.get('/dashboard/today', todayHandler);
-app.get('/dashboard/active', activeHandler);
-app.get('/members/search', searchHandler);
+app.get('/dashboard/today', dashboardAuth, todayHandler);
+app.get('/dashboard/active', dashboardAuth, activeHandler);
+app.get('/members/search', dashboardAuth, searchHandler);
 
 app.use((req, res) => {
   return res.status(404).json({
