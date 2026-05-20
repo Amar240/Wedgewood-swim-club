@@ -293,7 +293,17 @@ export async function signupHandler(req, res, next) {
     }
 
     const existingMember = await getMember(payload.locationId, payload.email);
-    const familyId = existingMember?.family_id ?? existingMember?.familyId ?? randomUUID();
+
+    if (existingMember) {
+      return res.status(200).json({
+        valid: true,
+        message: 'Member already registered',
+        alreadyExists: true,
+        membership_tier: existingMember.membershipType,
+      });
+    }
+
+    const familyId = randomUUID();
     const now = new Date().toISOString();
     const record = buildMemberRecord(payload, existingMember, familyId, now);
     const savedRecord = await upsertMemberRecord(record, now);
