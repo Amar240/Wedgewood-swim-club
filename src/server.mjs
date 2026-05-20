@@ -16,6 +16,7 @@ import {
   signOutHandler,
 } from './handlers/signOut.mjs';
 import { signupHandler } from './handlers/signup.mjs';
+import { welcomeHandler } from './handlers/welcome.mjs';
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.get('/health', healthHandler);
 app.get('/dashboard', (req, res) => {
   return res.sendFile('dashboard.html', { root: './src' });
 });
+app.get('/welcome', welcomeHandler);
 app.post('/checkin', checkInHandler);
 app.post('/signout', signOutHandler);
 app.post('/signout/manual', dashboardAuth, manualSignOutHandler);
