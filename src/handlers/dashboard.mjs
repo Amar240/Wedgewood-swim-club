@@ -9,7 +9,7 @@ import { resetActiveRows } from '../services/dynamo.mjs';
 
 let documentClient;
 const ACTIVE_MEMBERS_INDEX_NAME = 'active-members-index';
-const SEARCH_LIMIT = 20;
+const SEARCH_LIMIT = 10;
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -89,21 +89,111 @@ function normalizePhone(value) {
   return String(value ?? '').replace(/\D/g, '');
 }
 
-function matchesMemberSearch(item, query) {
-  const membershipName = String(item.membershipName ?? '').toLowerCase();
-  const queryTerms = query.split(/\s+/).filter((term) => term.length >= 2);
+function getPhoneDigits(value) {
+  const digits = normalizePhone(value);
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
+function formatPhone(value) {
+  const digits = getPhoneDigits(value);
+
+  if (digits.length !== 10) {
+    return value;
+  }
+
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+}
+
+function getNameParts(item) {
+  const fullName = String(item.membershipName ?? item.full_name ?? '').trim();
+  const nameParts = fullName.toLowerCase().split(/\s+/).filter(Boolean);
+  const firstName = String(item.first_name_lower ?? nameParts[0] ?? '').trim().toLowerCase();
+  const lastName = String(item.last_name_lower ?? nameParts.at(-1) ?? '').trim().toLowerCase();
+
+  return {
+    firstName,
+    lastName,
+    fullNameLower: fullName.toLowerCase(),
+  };
+}
+
+function scoreMemberSearch(item, query) {
+  const { firstName, lastName, fullNameLower } = getNameParts(item);
   const queryDigits = normalizePhone(query);
-  const phoneDigits = normalizePhone(item.phone);
+  const phoneDigits = getPhoneDigits(item.phone);
+  const wholeWordPattern = new RegExp(`(^|\\s)${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`);
 
-  if (membershipName.includes(query)) {
-    return true;
+  if (firstName.startsWith(query)) {
+    return 100;
   }
 
-  if (queryTerms.some((term) => membershipName.includes(term))) {
-    return true;
+  if (lastName.startsWith(query)) {
+    return 80;
   }
 
-  return queryDigits.length >= 2 && phoneDigits.startsWith(queryDigits);
+  if (queryDigits.length >= 2 && phoneDigits.startsWith(queryDigits)) {
+    return 70;
+  }
+
+  if (wholeWordPattern.test(fullNameLower)) {
+    return 60;
+  }
+
+  if (firstName.includes(query) || lastName.includes(query)) {
+    return 40;
+  }
+
+  return 0;
+}
+
+function parseFamilyMembers(familyTextRaw) {
+  const rawText = String(familyTextRaw ?? '').replace(/\\n/g, '\n').trim();
+
+  if (!rawText) {
+    return [];
+  }
+
+  const separator = rawText.includes('\n') ? /\n+/ : /,+/;
+
+  return rawText
+    .split(separator)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [name, ...relationshipParts] = line.split(/\s+-\s+/);
+      return {
+        name: name.trim(),
+        relationship: relationshipParts.join(' - ').trim(),
+      };
+    });
+}
+
+function mapMemberForDashboard(member, locationId, activePhones) {
+  const phoneRaw = getPhoneDigits(member.phone);
+
+  return {
+    membershipName: member.membershipName,
+    email: member.email,
+    phone: formatPhone(member.phone),
+    phone_raw: phoneRaw,
+    membershipType: member.membershipType,
+    maxMembers: member.maxMembers,
+    familyTextRaw: member.familyTextRaw,
+    familyMembers: parseFamilyMembers(member.familyTextRaw),
+    membershipStatus: member.membershipStatus,
+    location_id: locationId,
+    is_currently_active: activePhones.has(phoneRaw),
+  };
+}
+
+function sortScoredMatches(a, b) {
+  if (b.score !== a.score) {
+    return b.score - a.score;
+  }
+
+  return a.lastName.localeCompare(b.lastName)
+    || a.firstName.localeCompare(b.firstName)
+    || String(a.item.membershipName ?? '').localeCompare(String(b.item.membershipName ?? ''));
 }
 
 async function queryAllPages(commandInput) {
@@ -138,15 +228,23 @@ async function scanMemberMatches(commandInput, query) {
     );
 
     for (const item of result.Items ?? []) {
-      if (matchesMemberSearch(item, query) && matches.length < SEARCH_LIMIT) {
-        matches.push(item);
+      const score = scoreMemberSearch(item, query);
+
+      if (score > 0) {
+        const nameParts = getNameParts(item);
+        matches.push({
+          item,
+          score,
+          firstName: nameParts.firstName,
+          lastName: nameParts.lastName,
+        });
       }
     }
 
     exclusiveStartKey = result.LastEvaluatedKey;
-  } while (exclusiveStartKey && matches.length < SEARCH_LIMIT);
+  } while (exclusiveStartKey);
 
-  return matches;
+  return matches.sort(sortScoredMatches);
 }
 
 async function scanAllPages(commandInput) {
@@ -231,8 +329,10 @@ export async function activeHandler(req, res, next) {
       .map((member) => ({
         membershipName: member.membershipName,
         email: member.email,
-        phone: member.phone,
-        GSI1SK: member.GSI1SK,
+        phone: formatPhone(member.phone || member.GSI1SK),
+        phone_raw: getPhoneDigits(member.phone || member.GSI1SK),
+        GSI1SK: formatPhone(member.GSI1SK),
+        GSI1SK_raw: getPhoneDigits(member.GSI1SK),
         signedInAt: member.createdAt,
         createdAt: member.createdAt,
         pk: member.pk,
@@ -339,6 +439,7 @@ export async function searchHandler(req, res, next) {
       },
       Limit: 100,
     }, query);
+    const topMatches = matches.slice(0, SEARCH_LIMIT);
     const activeMembers = matches.length > 0
       ? await queryAllPages({
         TableName: requireEnv('DYNAMO_TABLE_NAME'),
@@ -350,21 +451,14 @@ export async function searchHandler(req, res, next) {
       })
       : [];
     const activePhones = new Set(activeMembers.map((member) => {
-      return normalizePhone(member.phone || member.GSI1SK);
+      return getPhoneDigits(member.phone || member.GSI1SK);
     }).filter(Boolean));
 
     return res.status(200).json({
-      matches: matches.map((member) => ({
-        membershipName: member.membershipName,
-        email: member.email,
-        phone: member.phone,
-        membershipType: member.membershipType,
-        maxMembers: member.maxMembers,
-        familyTextRaw: member.familyTextRaw,
-        membershipStatus: member.membershipStatus,
-        location_id: locationId,
-        is_currently_active: activePhones.has(normalizePhone(member.phone)),
-      })),
+      totalMatches: matches.length,
+      matches: topMatches.map((match) => {
+        return mapMemberForDashboard(match.item, locationId, activePhones);
+      }),
     });
   } catch (error) {
     return next(error);

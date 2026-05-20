@@ -457,6 +457,18 @@
         font-variant-numeric: tabular-nums;
       }
 
+      .phone-link {
+        color: inherit;
+        font-variant-numeric: tabular-nums;
+        text-decoration: none;
+      }
+
+      .phone-link:hover,
+      .phone-link:focus {
+        color: var(--teal);
+        text-decoration: underline;
+      }
+
       .event-badges {
         display: flex;
         flex-wrap: wrap;
@@ -836,6 +848,19 @@
         line-height: 1.25;
       }
 
+      .family-list {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .family-relationship {
+        color: var(--muted);
+        font-weight: 400;
+      }
+
       .detail-actions {
         display: flex;
         flex-wrap: wrap;
@@ -1176,6 +1201,8 @@
         idleLineIndex: 0,
         searchDebounce: null,
         searchMode: 'normal',
+        lastSearchQuery: '',
+        totalSearchMatches: 0,
         lastSearchResults: [],
         currentDetailMember: null,
         toastTimer: null,
@@ -1233,12 +1260,43 @@
         });
       }
 
+      function formatActivityTime(value) {
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+          return '--:--';
+        }
+
+        const minutesAgo = Math.floor((Date.now() - date.getTime()) / 60000);
+
+        if (minutesAgo < 1) {
+          return 'just now';
+        }
+
+        if (minutesAgo < 60) {
+          return `${minutesAgo} ${pluralize(minutesAgo, 'minute')} ago`;
+        }
+
+        return formatTime(date);
+      }
+
       function pluralize(count, singular, plural = `${singular}s`) {
         return Number(count) === 1 ? singular : plural;
       }
 
       function normalizePhone(value) {
         return String(value ?? '').replace(/\D/g, '');
+      }
+
+      function renderPhoneLink(phone, phoneRaw) {
+        const displayPhone = phone || phoneRaw || 'No phone listed';
+        const rawPhone = normalizePhone(phoneRaw || phone);
+
+        if (!rawPhone) {
+          return escapeHtml(displayPhone);
+        }
+
+        return `<a class="phone-link" href="tel:${escapeHtml(rawPhone)}">${escapeHtml(displayPhone)}</a>`;
       }
 
       function initialsFor(name) {
@@ -1412,7 +1470,7 @@
         const events = state.last5.slice(0, 5);
 
         if (events.length === 0) {
-          el.recentActivity.innerHTML = '<div class="empty-panel">No activity yet today.</div>';
+          el.recentActivity.innerHTML = '<div class="empty-panel">🏊 First check-in of the day coming up — be ready to greet them!</div>';
           return;
         }
 
@@ -1425,7 +1483,7 @@
             <div class="activity-row${flashClass}">
               <div class="activity-avatar" aria-hidden="true">${escapeHtml(initialsFor(name))}</div>
               <div class="row-name">${escapeHtml(name)}</div>
-              <div class="row-time">${escapeHtml(formatTime(event.timestamp || ''))}</div>
+              <div class="row-time">${escapeHtml(formatActivityTime(event.timestamp || ''))}</div>
               <div class="event-badges">${getEventBadges(event)}</div>
             </div>
           `;
@@ -1445,15 +1503,16 @@
         });
 
         if (members.length === 0) {
-          el.activeList.innerHTML = '<div class="empty-panel">Nobody is marked in the pool right now.</div>';
+          el.activeList.innerHTML = '<div class="empty-panel">🌊 Pool&apos;s quiet right now — first swimmer of the day will appear here.</div>';
           return;
         }
 
         el.activeList.innerHTML = members.map((member) => {
           const name = member.membershipName || 'Member';
           const phone = member.phone || member.GSI1SK || '';
+          const phoneRaw = member.phone_raw || member.GSI1SK_raw || normalizePhone(phone);
           const signedInAt = member.signedInAt || member.createdAt;
-          const phoneKey = normalizePhone(phone);
+          const phoneKey = normalizePhone(phoneRaw || phone);
 
           return `
             <div class="active-row" data-phone="${escapeHtml(phoneKey)}">
@@ -1461,7 +1520,7 @@
                 <div class="row-name">${escapeHtml(name)}</div>
                 <div class="row-note">Signed in ${escapeHtml(formatTime(signedInAt || ''))}</div>
               </div>
-              <div class="row-time">${escapeHtml(phone || 'No phone')}</div>
+              <div class="row-time">${renderPhoneLink(phone, phoneRaw)}</div>
               <button class="sign-out-button" type="button" data-phone="${escapeHtml(phoneKey)}">Sign Out</button>
             </div>
           `;
@@ -1479,7 +1538,7 @@
         }
 
         if (count === 0) {
-          el.newMembersList.innerHTML = '<div class="empty-panel">No new signups yet today.</div>';
+          el.newMembersList.innerHTML = '<div class="empty-panel">No new signups yet today. They&apos;ll show here when someone joins.</div>';
           return;
         }
 
@@ -1511,7 +1570,7 @@
           return;
         }
 
-        const phone = member.phone || member.GSI1SK || '';
+        const phone = member.phone_raw || member.GSI1SK_raw || member.phone || member.GSI1SK || '';
         const phoneKey = normalizePhone(phone);
         const button = actionButton || row?.querySelector('.sign-out-button');
 
@@ -1583,7 +1642,7 @@
           const result = await postJson('/checkin/manual', {
             location_id: member.location_id || LOCATION_ID,
             email: member.email,
-            phone: member.phone,
+            phone: member.phone_raw || member.phone,
             checked_in_by: 'front_desk_pin'
           });
 
@@ -1881,7 +1940,7 @@
           return true;
         }
 
-        const memberPhone = normalizePhone(member.phone);
+        const memberPhone = normalizePhone(member.phone_raw || member.phone);
         const memberName = String(member.membershipName ?? '').trim().toLowerCase();
 
         return state.activeMembers.some((activeMember) => {
@@ -1910,13 +1969,49 @@
         return member.familyTextRaw || 'Family details not listed';
       }
 
+      function getFamilyCount(member) {
+        const familyMembers = Array.isArray(member.familyMembers) ? member.familyMembers : [];
+        return familyMembers.length;
+      }
+
+      function getFamilyPreview(member) {
+        const count = getFamilyCount(member);
+
+        if (count > 0) {
+          return `Family · ${count} ${pluralize(count, 'member')}`;
+        }
+
+        return 'Family details not listed';
+      }
+
+      function getFamilyListHtml(member) {
+        const familyMembers = Array.isArray(member.familyMembers) ? member.familyMembers : [];
+
+        if (familyMembers.length === 0) {
+          return escapeHtml(getFamilyText(member));
+        }
+
+        return `
+          <ul class="family-list">
+            ${familyMembers.map((person) => `
+              <li>
+                ${escapeHtml(person.name || 'Family member')}
+                ${person.relationship ? `<span class="family-relationship">(${escapeHtml(person.relationship)})</span>` : ''}
+              </li>
+            `).join('')}
+          </ul>
+        `;
+      }
+
       function renderSearchResults(matches) {
         state.lastSearchResults = matches;
 
         if (matches.length === 0) {
           el.searchResults.innerHTML = `
             <div class="${state.searchMode === 'failed' ? 'search-error' : 'empty-state'}">
-              ${escapeHtml(state.searchMode === 'failed' ? SIGNUP_HELP : 'No matches yet. Try a first or last name.')}
+              ${escapeHtml(state.searchMode === 'failed'
+                ? SIGNUP_HELP
+                : `No members found for '${state.lastSearchQuery}'. Check spelling or try the first few letters of their last name.`)}
             </div>
           `;
           return;
@@ -1931,9 +2026,9 @@
               <span>
                 <span class="result-name">${escapeHtml(member.membershipName || 'Unnamed member')}</span>
                 <span class="result-meta">
-                  ${escapeHtml(member.membershipType || 'Membership')} · ${escapeHtml(member.phone || 'No phone listed')} · ${escapeHtml(getLastVisitText(member))}
+                  ${escapeHtml(member.membershipType || 'Membership')} · ${renderPhoneLink(member.phone, member.phone_raw)} · ${escapeHtml(getLastVisitText(member))}
                 </span>
-                <span class="result-family">${escapeHtml(getFamilyText(member))}</span>
+                <span class="result-family">${escapeHtml(getFamilyPreview(member))}</span>
               </span>
               <span class="result-actions">
                 <span class="badge${active ? ' active' : ''}">${escapeHtml(status)}</span>
@@ -1945,9 +2040,11 @@
 
       async function runSearch(rawQuery) {
         const query = rawQuery.trim();
+        state.lastSearchQuery = query;
 
         if (query.length < 2) {
           state.lastSearchResults = [];
+          state.totalSearchMatches = 0;
           el.searchMessage.textContent = '';
           el.searchResults.innerHTML = '';
           return;
@@ -1962,10 +2059,16 @@
           });
           const result = await fetchJson(`/members/search?${params.toString()}`);
           const matches = Array.isArray(result?.matches) ? result.matches : [];
+          state.totalSearchMatches = Number(result?.totalMatches) || matches.length;
 
-          el.searchMessage.textContent = matches.length > 0
-            ? `${matches.length} ${pluralize(matches.length, 'match')}`
-            : '';
+          if (matches.length === 0) {
+            el.searchMessage.textContent = '';
+          } else if (state.totalSearchMatches > matches.length) {
+            el.searchMessage.textContent = `Top ${matches.length} of ${state.totalSearchMatches} matches`;
+          } else {
+            el.searchMessage.textContent = `${matches.length} ${pluralize(matches.length, 'match', 'matches')}`;
+          }
+
           renderSearchResults(matches);
         } catch (error) {
           if (error.status === 401) {
@@ -2013,11 +2116,11 @@
           <div class="detail-grid">
             <div class="detail-field">
               <span class="detail-label">Family</span>
-              <span class="detail-value">${escapeHtml(getFamilyText(member))}</span>
+              <span class="detail-value">${getFamilyListHtml(member)}</span>
             </div>
             <div class="detail-field">
               <span class="detail-label">Phone</span>
-              <span class="detail-value">${escapeHtml(member.phone || 'No phone listed')}</span>
+              <span class="detail-value">${renderPhoneLink(member.phone, member.phone_raw)}</span>
             </div>
             <div class="detail-field">
               <span class="detail-label">Last Visit</span>
@@ -2094,6 +2197,10 @@
         });
 
         el.searchResults.addEventListener('click', (event) => {
+          if (event.target.closest('.phone-link')) {
+            return;
+          }
+
           const row = event.target.closest('.result-row');
 
           if (!row) {
