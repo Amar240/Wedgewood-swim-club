@@ -61,11 +61,12 @@
 
       .app {
         display: grid;
-        grid-template-rows: 60px minmax(220px, 30vh) minmax(210px, 1fr) minmax(170px, 24vh);
-        gap: 14px;
-        width: 100%;
+        grid-template-rows: 60px minmax(80px, 112px) auto minmax(0, 1fr);
+        gap: 18px;
+        width: min(100%, 1400px);
         height: 100dvh;
-        padding: 0 22px 22px;
+        margin: 0 auto;
+        padding: 0 24px 24px;
       }
 
       .topbar {
@@ -73,8 +74,8 @@
         align-items: center;
         justify-content: space-between;
         height: 60px;
-        margin: 0 -22px;
-        padding: 0 calc(22px + env(safe-area-inset-right)) 0 calc(22px + env(safe-area-inset-left));
+        margin: 0 -24px;
+        padding: 0 calc(24px + env(safe-area-inset-right)) 0 calc(24px + env(safe-area-inset-left));
         color: var(--white);
         background: linear-gradient(115deg, var(--navy), #176CA7 62%, var(--teal));
         box-shadow: 0 7px 20px rgba(27, 58, 92, 0.18);
@@ -150,13 +151,14 @@
         position: relative;
         display: grid;
         min-height: 0;
-        padding: 30px 34px;
+        max-height: 112px;
+        padding: 18px 26px;
         overflow: hidden;
         color: var(--navy);
         background: rgba(255, 255, 255, 0.96);
         border: 2px solid rgba(33, 150, 243, 0.2);
-        border-radius: 30px;
-        box-shadow: var(--shadow);
+        border-radius: 24px;
+        box-shadow: 0 12px 30px rgba(27, 58, 92, 0.12);
         transition: opacity 180ms ease, border-color 180ms ease, background 180ms ease;
       }
 
@@ -187,67 +189,80 @@
       .moment-content {
         position: relative;
         z-index: 1;
-        display: grid;
-        align-content: center;
-        justify-items: center;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22px;
         min-height: 100%;
-        text-align: center;
+        text-align: left;
       }
 
       .moment-kicker {
-        margin-bottom: 10px;
+        margin: 0;
         color: var(--muted);
-        font-size: 24px;
-        font-weight: 800;
+        font-size: 18px;
+        font-weight: 700;
       }
 
       .moment-card.failed .moment-kicker {
         color: var(--warning);
       }
 
+      .moment-copy {
+        min-width: 0;
+      }
+
+      .moment-identity {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+      }
+
       .moment-title {
-        max-width: 980px;
         margin: 0;
-        font-size: 56px;
-        font-weight: 900;
-        line-height: 1.04;
+        color: var(--navy);
+        font-size: 30px;
+        font-weight: 850;
+        line-height: 1.08;
         letter-spacing: 0;
       }
 
       .member-name {
-        display: block;
-        margin-top: 8px;
+        display: inline;
+        margin: 0;
         color: var(--text);
-        font-size: 64px;
-        font-weight: 950;
-        line-height: 1.02;
+        font-size: inherit;
+        font-weight: 900;
+        line-height: inherit;
       }
 
       .moment-subtitle {
-        margin: 18px 0 0;
+        margin: 5px 0 0;
         color: var(--muted);
-        font-size: 28px;
-        font-weight: 750;
+        font-size: 17px;
+        font-weight: 500;
       }
 
       .swimmer-line {
-        margin-top: 18px;
+        flex: 0 0 auto;
+        margin: 0;
         color: var(--navy);
-        font-size: 30px;
+        font-size: 26px;
         font-weight: 850;
         font-variant-numeric: tabular-nums;
       }
 
       .avatar {
         display: grid;
-        width: 86px;
-        height: 86px;
-        margin: 0 auto 14px;
+        width: 56px;
+        height: 56px;
+        margin: 0;
         place-items: center;
         color: var(--white);
         background: linear-gradient(145deg, var(--teal), var(--navy));
         border-radius: 50%;
-        font-size: 30px;
+        font-size: 20px;
         font-weight: 900;
         box-shadow: 0 10px 24px rgba(27, 58, 92, 0.22);
       }
@@ -256,7 +271,7 @@
         display: inline-flex;
         align-items: center;
         min-height: 44px;
-        margin-top: 18px;
+        margin: 0;
         padding: 8px 18px;
         color: var(--navy);
         background: var(--aqua);
@@ -268,7 +283,7 @@
       .failed-actions {
         display: flex;
         justify-content: center;
-        margin-top: 24px;
+        margin: 0;
       }
 
       .primary-button {
@@ -290,7 +305,7 @@
       .last-updated {
         position: absolute;
         right: 24px;
-        bottom: 16px;
+        bottom: 10px;
         z-index: 2;
         color: var(--muted);
         font-size: 17px;
@@ -300,7 +315,7 @@
       .dashboard-panels {
         display: grid;
         grid-template-columns: 1.2fr 1.35fr 0.9fr;
-        gap: 14px;
+        gap: 24px;
         min-height: 0;
       }
 
@@ -308,7 +323,7 @@
         display: grid;
         grid-template-rows: auto minmax(0, 1fr);
         min-height: 0;
-        padding: 16px;
+        padding: 32px;
         background: rgba(255, 255, 255, 0.94);
         border: 2px solid rgba(27, 58, 92, 0.1);
         border-radius: 22px;
@@ -319,19 +334,33 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 10px;
+        gap: 12px;
         min-height: 44px;
-        margin-bottom: 8px;
+        margin-bottom: 16px;
         color: var(--navy);
-        font-size: 21px;
-        font-weight: 950;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .panel-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .panel-icon,
+      .search-icon svg {
+        width: 22px;
+        height: 22px;
+        flex: 0 0 auto;
       }
 
       .panel-subtitle,
       .panel-action-message {
         color: var(--muted);
         font-size: 15px;
-        font-weight: 800;
+        font-weight: 500;
       }
 
       .panel-action-message.error {
@@ -343,7 +372,7 @@
       .signup-list {
         display: grid;
         align-content: start;
-        gap: 8px;
+        gap: 12px;
         min-height: 0;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
@@ -354,12 +383,27 @@
       .signup-row {
         display: grid;
         align-items: center;
-        gap: 10px;
-        min-height: 58px;
-        padding: 9px 10px;
+        gap: 12px;
+        min-height: 62px;
+        padding: 12px 14px;
         background: rgba(232, 244, 248, 0.58);
         border: 1px solid rgba(27, 58, 92, 0.1);
         border-radius: 16px;
+        transition: background 160ms ease, transform 160ms ease;
+      }
+
+      .activity-row:hover,
+      .active-row:hover,
+      .signup-row:hover,
+      .result-row:hover {
+        background: rgba(232, 244, 248, 0.82);
+      }
+
+      .activity-row:active,
+      .active-row:active,
+      .signup-row:active,
+      .result-row:active {
+        transform: scale(0.992);
       }
 
       .activity-row {
@@ -392,15 +436,15 @@
         color: var(--white);
         background: linear-gradient(145deg, var(--teal), var(--navy));
         border-radius: 50%;
-        font-size: 15px;
-        font-weight: 950;
+        font-size: 17px;
+        font-weight: 900;
       }
 
       .row-name {
         overflow: hidden;
         color: var(--navy);
-        font-size: 18px;
-        font-weight: 950;
+        font-size: 16px;
+        font-weight: 650;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -408,8 +452,8 @@
       .row-time,
       .row-note {
         color: var(--muted);
-        font-size: 15px;
-        font-weight: 820;
+        font-size: 16px;
+        font-weight: 400;
         font-variant-numeric: tabular-nums;
       }
 
@@ -467,24 +511,35 @@
         background: var(--success);
       }
 
+      .manual-sign-out-button {
+        color: var(--navy);
+        background: var(--yellow);
+        border: 1px solid rgba(249, 168, 37, 0.36);
+        box-shadow: none;
+      }
+
       .sign-out-button:disabled,
-      .manual-check-in-button:disabled {
+      .manual-check-in-button:disabled,
+      .manual-sign-out-button:disabled {
         opacity: 0.58;
       }
 
       .new-members-toggle {
         color: var(--navy);
-        background: var(--aqua);
+        background: transparent;
+        border: 1px solid rgba(27, 58, 92, 0.16);
+        box-shadow: none;
       }
 
       .reset-pool-button {
+        width: 44px;
         min-height: 44px;
-        padding: 0 12px;
+        padding: 0;
         color: var(--muted);
         background: rgba(88, 112, 131, 0.12);
         border: 1px solid rgba(88, 112, 131, 0.22);
         border-radius: 12px;
-        font-size: 14px;
+        font-size: 18px;
         font-weight: 900;
       }
 
@@ -502,14 +557,14 @@
       .empty-panel {
         padding: 12px;
         color: var(--muted);
-        font-size: 17px;
-        font-weight: 820;
+        font-size: 16px;
+        font-weight: 400;
         line-height: 1.25;
       }
 
       .search-zone {
         display: grid;
-        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-rows: auto auto minmax(0, auto);
         min-height: 0;
       }
 
@@ -518,10 +573,10 @@
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         color: var(--navy);
-        font-size: 26px;
-        font-weight: 900;
+        font-size: 18px;
+        font-weight: 600;
       }
 
       .search-message {
@@ -535,7 +590,7 @@
         position: relative;
         display: grid;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
       }
 
       .search-icon {
@@ -543,7 +598,7 @@
         left: 22px;
         z-index: 1;
         color: var(--navy);
-        font-size: 25px;
+        display: inline-flex;
       }
 
       .search-input {
@@ -567,9 +622,10 @@
 
       .results {
         display: grid;
-        gap: 14px;
+        gap: 10px;
         min-height: 0;
-        padding: 8px 3px 18px;
+        max-height: 170px;
+        padding: 4px 3px 8px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }
@@ -580,8 +636,8 @@
         align-items: center;
         gap: 18px;
         width: 100%;
-        min-height: 92px;
-        padding: 18px 20px;
+        min-height: 76px;
+        padding: 14px 18px;
         color: var(--text);
         cursor: pointer;
         text-align: left;
@@ -589,10 +645,6 @@
         border: 2px solid rgba(27, 58, 92, 0.1);
         border-radius: 18px;
         box-shadow: 0 8px 20px rgba(27, 58, 92, 0.08);
-      }
-
-      .result-row:active {
-        transform: scale(0.992);
       }
 
       .result-row:focus-visible {
@@ -603,8 +655,8 @@
       .result-name {
         overflow: hidden;
         color: var(--navy);
-        font-size: 28px;
-        font-weight: 950;
+        font-size: 22px;
+        font-weight: 750;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -613,8 +665,8 @@
       .result-family {
         margin-top: 4px;
         color: var(--muted);
-        font-size: 20px;
-        font-weight: 750;
+        font-size: 16px;
+        font-weight: 400;
         line-height: 1.24;
       }
 
@@ -725,35 +777,107 @@
       .detail-panel {
         align-items: end;
         background: rgba(27, 58, 92, 0.42);
+        opacity: 1;
+        transition: opacity 200ms ease;
       }
 
       .detail-card {
         width: min(760px, 96vw);
-        padding: 28px;
+        padding: 30px;
         color: var(--text);
         background: var(--white);
         border-radius: 30px 30px 0 0;
         box-shadow: var(--shadow);
+        animation: detailIn 200ms ease;
       }
 
       .detail-card h2 {
-        margin: 0 0 12px;
-        color: var(--success);
-        font-size: 34px;
+        margin: 0 0 16px;
+        color: var(--navy);
+        font-size: 36px;
         line-height: 1.12;
       }
 
       .detail-card p {
         margin: 8px 0;
         color: var(--muted);
-        font-size: 22px;
-        font-weight: 760;
+        font-size: 18px;
+        font-weight: 400;
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+      }
+
+      .detail-field {
+        min-height: 92px;
+        padding: 14px;
+        background: var(--aqua);
+        border: 1px solid rgba(27, 58, 92, 0.1);
+        border-radius: 18px;
+      }
+
+      .detail-label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .detail-value {
+        color: var(--text);
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 1.25;
       }
 
       .detail-actions {
         display: flex;
+        flex-wrap: wrap;
         justify-content: flex-end;
+        gap: 12px;
         margin-top: 20px;
+      }
+
+      .detail-member-actions {
+        justify-content: flex-start;
+      }
+
+      .detail-action-button {
+        min-width: 180px;
+        font-size: 20px;
+      }
+
+      .secondary-button {
+        min-height: 56px;
+        padding: 0 22px;
+        color: var(--navy);
+        background: var(--aqua);
+        border-radius: 16px;
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(28px + env(safe-area-inset-bottom));
+        z-index: 30;
+        min-height: 48px;
+        max-width: min(520px, calc(100vw - 32px));
+        padding: 12px 20px;
+        color: var(--white);
+        background: var(--navy);
+        border-radius: 999px;
+        box-shadow: var(--shadow);
+        font-size: 18px;
+        font-weight: 750;
+        transform: translateX(-50%);
       }
 
       [hidden] {
@@ -793,9 +917,30 @@
         }
       }
 
+      @keyframes detailIn {
+        from {
+          opacity: 0;
+          transform: translateY(18px) scale(0.96);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      .detail-panel.closing {
+        opacity: 0;
+      }
+
+      .detail-panel.closing .detail-card {
+        transform: translateY(14px) scale(0.97);
+        transition: transform 200ms ease;
+      }
+
       @media (max-height: 720px) {
         body {
-          font-size: 21px;
+          font-size: 18px;
         }
 
         .app {
@@ -804,25 +949,60 @@
         }
 
         .moment-card {
-          padding: 22px 28px;
+          padding: 14px 22px;
         }
 
         .moment-title {
-          font-size: 46px;
+          font-size: 26px;
         }
 
         .member-name {
-          font-size: 54px;
+          font-size: inherit;
         }
 
         .search-input {
           min-height: 62px;
         }
+
+        .panel {
+          padding: 24px;
+        }
       }
 
       @media (max-width: 980px) {
+        .app {
+          overflow-y: auto;
+          height: auto;
+          min-height: 100dvh;
+        }
+
+        body {
+          overflow: auto;
+        }
+
+        .moment-content {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 8px;
+        }
+
         .dashboard-panels {
           grid-template-columns: 1fr;
+        }
+
+        .detail-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
         }
       }
     </style>
@@ -851,41 +1031,18 @@
         <div id="lastUpdated" class="last-updated" hidden></div>
       </main>
 
-      <section class="dashboard-panels" aria-label="Pool activity">
-        <article class="panel">
-          <div class="panel-header">
-            <span>Recent Activity</span>
-            <span class="panel-subtitle">Last 5</span>
-          </div>
-          <div id="recentActivity" class="activity-list"></div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-header">
-            <span>Currently in Pool</span>
-            <span id="activeMessage" class="panel-action-message"></span>
-            <button id="resetPoolButton" class="reset-pool-button" type="button">🔄 Reset Pool</button>
-          </div>
-          <div id="activeList" class="active-list"></div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-header">
-            <span>🆕 New Members Today</span>
-            <button id="newMembersToggle" class="new-members-toggle" type="button">Show</button>
-          </div>
-          <div id="newMembersSummary" class="new-members-count">0</div>
-          <div id="newMembersList" class="signup-list" hidden></div>
-        </article>
-      </section>
-
       <section class="search-zone" aria-label="Member search">
         <div class="search-label">
           <span>Look someone up</span>
           <span id="searchMessage" class="search-message"></span>
         </div>
         <div class="search-box">
-          <span class="search-icon" aria-hidden="true">⌕</span>
+          <span class="search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"></circle>
+              <path d="m16.5 16.5 4 4" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+            </svg>
+          </span>
           <input
             id="searchInput"
             class="search-input"
@@ -897,6 +1054,53 @@
           >
         </div>
         <div id="searchResults" class="results"></div>
+      </section>
+
+      <section class="dashboard-panels" aria-label="Pool activity">
+        <article class="panel">
+          <div class="panel-header">
+            <span class="panel-title">
+              <svg class="panel-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"></circle>
+                <path d="M12 7v5l3 2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+              </svg>
+              Recent Activity
+            </span>
+            <span class="panel-subtitle">Last 5</span>
+          </div>
+          <div id="recentActivity" class="activity-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <span class="panel-title">
+              <svg class="panel-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3 16c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 2-1" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+                <path d="M3 20c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 2-1" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+                <path d="M8 10a4 4 0 0 1 8 0" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+              </svg>
+              Currently in Pool
+            </span>
+            <span id="activeMessage" class="panel-action-message"></span>
+            <button id="resetPoolButton" class="reset-pool-button" type="button" aria-label="Reset Pool" title="Reset Pool">🔄</button>
+          </div>
+          <div id="activeList" class="active-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <span class="panel-title">
+              <svg class="panel-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" stroke="currentColor" stroke-linejoin="round" stroke-width="2"></path>
+                <path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"></path>
+              </svg>
+              New Members Today
+            </span>
+            <button id="newMembersToggle" class="new-members-toggle" type="button">Show</button>
+          </div>
+          <div id="newMembersSummary" class="new-members-count">0</div>
+          <div id="newMembersList" class="signup-list" hidden></div>
+        </article>
       </section>
     </div>
 
@@ -922,10 +1126,12 @@
       <div class="detail-card">
         <div id="detailContent"></div>
         <div class="detail-actions">
-          <button id="closeDetail" class="primary-button" type="button">Done</button>
+          <button id="closeDetail" class="secondary-button" type="button">Done</button>
         </div>
       </div>
     </div>
+
+    <div id="toast" class="toast" hidden></div>
 
     <script>
       const API_URL = '';
@@ -971,6 +1177,8 @@
         searchDebounce: null,
         searchMode: 'normal',
         lastSearchResults: [],
+        currentDetailMember: null,
+        toastTimer: null,
         signingOutPhones: new Set(),
         newMembersExpanded: false
       };
@@ -998,7 +1206,8 @@
         pinMessage: document.getElementById('pinMessage'),
         detailPanel: document.getElementById('detailPanel'),
         detailContent: document.getElementById('detailContent'),
-        closeDetail: document.getElementById('closeDetail')
+        closeDetail: document.getElementById('closeDetail'),
+        toast: document.getElementById('toast')
       };
 
       function escapeHtml(value) {
@@ -1094,11 +1303,12 @@
         const line = idleLines[state.idleLineIndex % idleLines.length];
         setMomentMode('idle');
         el.momentContent.innerHTML = `
-          <div>
+          <div class="moment-copy">
             <div class="moment-kicker">🌊 ${escapeHtml(line)}</div>
-            <h1 class="moment-title">${escapeHtml(getSwimmerLine())}</h1>
-            <p class="moment-subtitle">Easy day at the front gate.</p>
+            <h1 class="moment-title">Welcome to Wedgewood Pool</h1>
+            <p class="moment-subtitle">Make sure to say hi.</p>
           </div>
+          <div class="swimmer-line">${escapeHtml(getSwimmerLine())}</div>
         `;
       }
 
@@ -1113,15 +1323,17 @@
         state.currentMomentUntil = Date.now() + MOMENT_HOLD_MS;
         setMomentMode('check-in');
         el.momentContent.innerHTML = `
-          <div>
+          <div class="moment-identity">
             <div class="avatar" aria-hidden="true">${escapeHtml(initialsFor(name))}</div>
-            <div class="moment-kicker">👋 Just signed in!</div>
-            <h1 class="moment-title">
-              <span class="member-name">${escapeHtml(name)}</span>
-            </h1>
-            <p class="moment-subtitle">Welcome them</p>
-            <div class="soft-pill">${escapeHtml(familyText)}</div>
+            <div class="moment-copy">
+              <div class="moment-kicker">👋 Just signed in!</div>
+              <h1 class="moment-title">
+                <span class="member-name">${escapeHtml(name)}</span>
+              </h1>
+              <p class="moment-subtitle">Welcome them</p>
+            </div>
           </div>
+          <div class="soft-pill">${escapeHtml(familyText)}</div>
         `;
 
         playChime('check-in');
@@ -1135,17 +1347,17 @@
         state.currentMomentUntil = Number.POSITIVE_INFINITY;
         setMomentMode('failed');
         el.momentContent.innerHTML = `
-          <div>
+          <div class="moment-copy">
             <div class="moment-kicker">❗ Couldn't find them — please help</div>
             <h1 class="moment-title">
               <span class="member-name">"${escapeHtml(name)}"</span>
               tried to check in
             </h1>
-            <div class="failed-actions">
-              <button class="primary-button search-failed-button" type="button" data-name="${escapeHtml(name)}">
-                Search for them →
-              </button>
-            </div>
+          </div>
+          <div class="failed-actions">
+            <button class="primary-button search-failed-button" type="button" data-name="${escapeHtml(name)}">
+              Search for them →
+            </button>
           </div>
         `;
 
@@ -1282,7 +1494,16 @@
         `).join('');
       }
 
-      async function manuallySignOut(member, row) {
+      function showToast(message) {
+        window.clearTimeout(state.toastTimer);
+        el.toast.textContent = message;
+        el.toast.hidden = false;
+        state.toastTimer = window.setTimeout(() => {
+          el.toast.hidden = true;
+        }, 3200);
+      }
+
+      async function manuallySignOut(member, row = null, actionButton = null) {
         const name = member.membershipName || 'Member';
         const confirmed = window.confirm(`Sign out ${name}? They might still be at the pool.`);
 
@@ -1292,7 +1513,7 @@
 
         const phone = member.phone || member.GSI1SK || '';
         const phoneKey = normalizePhone(phone);
-        const button = row.querySelector('.sign-out-button');
+        const button = actionButton || row?.querySelector('.sign-out-button');
 
         el.activeMessage.classList.remove('error');
         el.activeMessage.textContent = 'Signing out...';
@@ -1313,16 +1534,22 @@
           window.setTimeout(() => {
             state.signingOutPhones.delete(phoneKey);
           }, 10000);
-          row.classList.add('removing');
+          row?.classList.add('removing');
           state.activeMembers = state.activeMembers.filter((activeMember) => {
             return normalizePhone(activeMember.phone || activeMember.GSI1SK) !== phoneKey;
           });
           state.swimmerCount = Math.max(0, state.swimmerCount - 1);
+          member.is_currently_active = false;
           el.activeMessage.textContent = 'Signed out';
+          hideMemberDetail();
+          showToast(`👋 Signed out ${name}`);
+
           window.setTimeout(() => {
             renderActiveList();
+            renderSearchResults(state.lastSearchResults);
             renderIdle();
           }, 190);
+          pollDashboard();
         } catch (error) {
           if (error.status === 401) {
             showPinOverlay('That PIN did not work. Try again.');
@@ -1338,7 +1565,7 @@
         }
       }
 
-      async function manuallyCheckIn(member, button) {
+      async function manuallyCheckIn(member, button = null) {
         const name = member.membershipName || 'Member';
         const confirmed = window.confirm(`Check in ${name}?`);
 
@@ -1365,6 +1592,8 @@
           member.is_currently_active = true;
 
           renderSearchResults(state.lastSearchResults);
+          hideMemberDetail();
+          showToast(result.already_in_pool ? result.message : `✓ Checked in ${name}`);
           pollDashboard();
         } catch (error) {
           if (error.status === 401) {
@@ -1395,8 +1624,12 @@
           await postJson(`/admin/reset-active?location_id=${encodeURIComponent(LOCATION_ID)}`, {});
           state.activeMembers = [];
           state.swimmerCount = 0;
+          state.lastSearchResults.forEach((member) => {
+            member.is_currently_active = false;
+          });
           el.activeMessage.textContent = 'Pool reset — 0 swimmers';
           renderActiveList();
+          renderSearchResults(state.lastSearchResults);
           renderIdle();
           pollDashboard();
         } catch (error) {
@@ -1704,7 +1937,6 @@
               </span>
               <span class="result-actions">
                 <span class="badge${active ? ' active' : ''}">${escapeHtml(status)}</span>
-                ${active ? '' : `<button class="manual-check-in-button" type="button" data-index="${index}">✓ Check In</button>`}
               </span>
             </div>
           `;
@@ -1768,17 +2000,53 @@
       }
 
       function showMemberDetail(member) {
+        const active = isMemberActive(member);
+        const action = active ? 'signout' : 'checkin';
+        const actionClass = active ? 'manual-sign-out-button' : 'manual-check-in-button';
+        const actionLabel = active ? 'Sign Out' : '✓ Check In';
+
+        state.currentDetailMember = member;
+        el.detailPanel.classList.remove('closing');
         el.detailContent.innerHTML = `
           <h2>✅ Yes, ${escapeHtml(member.membershipName || 'this person')} is a member</h2>
-          <p>${escapeHtml(member.membershipType || 'Membership')} · ${escapeHtml(member.phone || 'No phone listed')}</p>
-          <p>${escapeHtml(getFamilyText(member))}</p>
-          <p>${escapeHtml(getLastVisitText(member))}</p>
+          <p>${escapeHtml(member.membershipType || 'Membership')}</p>
+          <div class="detail-grid">
+            <div class="detail-field">
+              <span class="detail-label">Family</span>
+              <span class="detail-value">${escapeHtml(getFamilyText(member))}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-label">Phone</span>
+              <span class="detail-value">${escapeHtml(member.phone || 'No phone listed')}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-label">Last Visit</span>
+              <span class="detail-value">${escapeHtml(getLastVisitText(member))}</span>
+            </div>
+          </div>
+          <div class="detail-actions detail-member-actions">
+            <button class="primary-button ${actionClass} detail-action-button" type="button" data-action="${action}">
+              ${escapeHtml(actionLabel)}
+            </button>
+          </div>
         `;
         el.detailPanel.hidden = false;
+        window.setTimeout(() => {
+          el.detailContent.querySelector('.detail-action-button')?.focus();
+        }, 40);
       }
 
       function hideMemberDetail() {
-        el.detailPanel.hidden = true;
+        if (el.detailPanel.hidden) {
+          return;
+        }
+
+        el.detailPanel.classList.add('closing');
+        window.setTimeout(() => {
+          el.detailPanel.hidden = true;
+          el.detailPanel.classList.remove('closing');
+          state.currentDetailMember = null;
+        }, 200);
       }
 
       function recordInteraction() {
@@ -1826,18 +2094,6 @@
         });
 
         el.searchResults.addEventListener('click', (event) => {
-          const checkInButton = event.target.closest('.manual-check-in-button');
-
-          if (checkInButton) {
-            const member = state.lastSearchResults[Number(checkInButton.dataset.index)];
-
-            if (member) {
-              manuallyCheckIn(member, checkInButton);
-            }
-
-            return;
-          }
-
           const row = event.target.closest('.result-row');
 
           if (!row) {
@@ -1858,7 +2114,7 @@
 
           const row = event.target.closest('.result-row');
 
-          if (!row || event.target.closest('.manual-check-in-button')) {
+          if (!row) {
             return;
           }
 
@@ -1868,6 +2124,21 @@
           if (member) {
             showMemberDetail(member);
           }
+        });
+
+        el.detailContent.addEventListener('click', (event) => {
+          const button = event.target.closest('.detail-action-button');
+
+          if (!button || !state.currentDetailMember) {
+            return;
+          }
+
+          if (button.dataset.action === 'signout') {
+            manuallySignOut(state.currentDetailMember, null, button);
+            return;
+          }
+
+          manuallyCheckIn(state.currentDetailMember, button);
         });
 
         el.activeList.addEventListener('click', (event) => {
@@ -1900,6 +2171,12 @@
 
           if (button) {
             searchForFailedName(button.dataset.name || getEventName(state.failedMoment));
+          }
+        });
+
+        el.detailPanel.addEventListener('click', (event) => {
+          if (event.target === el.detailPanel) {
+            hideMemberDetail();
           }
         });
 
