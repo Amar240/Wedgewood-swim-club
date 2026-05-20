@@ -223,7 +223,7 @@ function buildMemberRecord(payload, existingMember, familyId, now) {
     membershipStatus: 'active',
     start_date: START_DATE,
     end_date: END_DATE,
-    source: `ghl_signup_${getLocalDateString()}`,
+    source: `ghl_signup_${payload.locationId}_${getLocalDateString()}`,
     importedAt: existingMember?.importedAt ?? now,
     signupUpdatedAt: now,
     updatedAt: now,
