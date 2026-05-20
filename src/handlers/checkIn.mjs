@@ -1,6 +1,7 @@
 import { writeCheckInEvent } from '../services/dynamo.mjs';
 import { getMember } from '../services/members.mjs';
 import { isAlreadyCheckedIn } from '../utils/stateCheck.mjs';
+import { isWebhookAuthorized } from '../utils/webhookAuth.mjs';
 
 function hasValue(value) {
   return value !== undefined && value !== null && value !== '';
@@ -8,10 +9,6 @@ function hasValue(value) {
 
 function cleanString(value) {
   return typeof value === 'string' ? value.trim() : value;
-}
-
-function getHeader(req, name) {
-  return req.get?.(name) ?? req.headers?.[name.toLowerCase()];
 }
 
 function getMembershipName(body) {
@@ -60,9 +57,7 @@ function getMissingFields(payload) {
 
 export async function checkInHandler(req, res, next) {
   try {
-    const webhookSecret = process.env.WEBHOOK_SECRET;
-
-    if (webhookSecret && getHeader(req, 'X-Webhook-Secret') !== webhookSecret) {
+    if (!isWebhookAuthorized(req)) {
       return res.status(401).json({
         valid: false,
         message: 'Unauthorized',

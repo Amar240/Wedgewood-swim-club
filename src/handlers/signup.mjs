@@ -6,6 +6,7 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 
 import { getMember } from '../services/members.mjs';
+import { isWebhookAuthorized } from '../utils/webhookAuth.mjs';
 
 let documentClient;
 
@@ -71,10 +72,6 @@ function resolvePaymentTier(paymentAmount) {
     membershipType: 'Unknown',
     maxMembers: 1,
   };
-}
-
-function getHeader(req, name) {
-  return req.get?.(name) ?? req.headers?.[name.toLowerCase()];
 }
 
 function getLocalDateString(date = new Date()) {
@@ -198,6 +195,9 @@ function buildMemberRecord(payload, existingMember, familyId, now) {
     contactId: payload.contactId,
     first_name: payload.firstName,
     last_name: payload.lastName,
+    first_name_lower: getFirstNameKey(payload.firstName),
+    last_name_lower: String(payload.lastName || '').trim().toLowerCase(),
+    full_name: payload.membershipName,
     membershipName: payload.membershipName,
     phone: payload.phone,
     email: payload.email,
@@ -228,6 +228,19 @@ function buildMemberRecord(payload, existingMember, familyId, now) {
     signupUpdatedAt: now,
     updatedAt: now,
   };
+}
+
+function needsSearchAttributeRepair(existingMember, record) {
+  return [
+    'GSI1PK',
+    'GSI1SK',
+    'GSI2PK',
+    'membershipName',
+    'first_name_lower',
+    'last_name_lower',
+    'full_name',
+    'source',
+  ].some((field) => existingMember?.[field] !== record[field]);
 }
 
 async function upsertMemberRecord(record, createdAt) {
@@ -271,9 +284,7 @@ async function upsertMemberRecord(record, createdAt) {
 
 export async function signupHandler(req, res, next) {
   try {
-    const webhookSecret = process.env.WEBHOOK_SECRET;
-
-    if (webhookSecret && getHeader(req, 'X-Webhook-Secret') !== webhookSecret) {
+    if (!isWebhookAuthorized(req)) {
       return res.status(401).json({
         valid: false,
         message: 'Unauthorized',
@@ -293,8 +304,16 @@ export async function signupHandler(req, res, next) {
     }
 
     const existingMember = await getMember(payload.locationId, payload.email);
+    const familyId = existingMember?.family_id ?? existingMember?.familyId ?? randomUUID();
+    const now = new Date().toISOString();
+    const record = buildMemberRecord(payload, existingMember, familyId, now);
 
     if (existingMember) {
+      if (needsSearchAttributeRepair(existingMember, record)) {
+        const savedRecord = await upsertMemberRecord(record, now);
+        logResultingMember(savedRecord, true);
+      }
+
       return res.status(200).json({
         valid: true,
         message: 'Member already registered',
@@ -303,9 +322,6 @@ export async function signupHandler(req, res, next) {
       });
     }
 
-    const familyId = randomUUID();
-    const now = new Date().toISOString();
-    const record = buildMemberRecord(payload, existingMember, familyId, now);
     const savedRecord = await upsertMemberRecord(record, now);
 
     logResultingMember(savedRecord, Boolean(existingMember));
