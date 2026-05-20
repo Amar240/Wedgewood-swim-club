@@ -142,6 +142,7 @@ export async function checkInHandler(req, res, next) {
       numAttending,
       numGuests,
       {
+        email,
         membershipNameFromForm,
         guestPass,
         formType,

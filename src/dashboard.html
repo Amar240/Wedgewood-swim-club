@@ -61,8 +61,8 @@
 
       .app {
         display: grid;
-        grid-template-rows: 60px minmax(270px, 40vh) minmax(0, 1fr);
-        gap: 18px;
+        grid-template-rows: 60px minmax(220px, 30vh) minmax(210px, 1fr) minmax(170px, 24vh);
+        gap: 14px;
         width: 100%;
         height: 100dvh;
         padding: 0 22px 22px;
@@ -295,6 +295,194 @@
         color: var(--muted);
         font-size: 17px;
         font-weight: 800;
+      }
+
+      .dashboard-panels {
+        display: grid;
+        grid-template-columns: 1.2fr 1.35fr 0.9fr;
+        gap: 14px;
+        min-height: 0;
+      }
+
+      .panel {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        min-height: 0;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.94);
+        border: 2px solid rgba(27, 58, 92, 0.1);
+        border-radius: 22px;
+        box-shadow: 0 10px 28px rgba(27, 58, 92, 0.1);
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 44px;
+        margin-bottom: 8px;
+        color: var(--navy);
+        font-size: 21px;
+        font-weight: 950;
+      }
+
+      .panel-subtitle,
+      .panel-action-message {
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .panel-action-message.error {
+        color: var(--warning);
+      }
+
+      .activity-list,
+      .active-list,
+      .signup-list {
+        display: grid;
+        align-content: start;
+        gap: 8px;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .activity-row,
+      .active-row,
+      .signup-row {
+        display: grid;
+        align-items: center;
+        gap: 10px;
+        min-height: 58px;
+        padding: 9px 10px;
+        background: rgba(232, 244, 248, 0.58);
+        border: 1px solid rgba(27, 58, 92, 0.1);
+        border-radius: 16px;
+      }
+
+      .activity-row {
+        grid-template-columns: 42px minmax(0, 1fr) auto auto;
+      }
+
+      .active-row {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+      }
+
+      .signup-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .activity-row.flash {
+        animation: tealRowFlash 200ms ease-out;
+      }
+
+      .active-row.removing {
+        opacity: 0;
+        transform: translateX(18px);
+        transition: opacity 180ms ease, transform 180ms ease;
+      }
+
+      .activity-avatar {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        color: var(--white);
+        background: linear-gradient(145deg, var(--teal), var(--navy));
+        border-radius: 50%;
+        font-size: 15px;
+        font-weight: 950;
+      }
+
+      .row-name {
+        overflow: hidden;
+        color: var(--navy);
+        font-size: 18px;
+        font-weight: 950;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .row-time,
+      .row-note {
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 820;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .event-badges {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 5px;
+      }
+
+      .event-badge {
+        min-height: 32px;
+        padding: 6px 9px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 950;
+        white-space: nowrap;
+      }
+
+      .event-badge.checked-in {
+        color: var(--white);
+        background: var(--success);
+      }
+
+      .event-badge.signed-out {
+        color: var(--white);
+        background: var(--teal);
+      }
+
+      .event-badge.guest {
+        color: var(--navy);
+        background: var(--yellow);
+        border: 1px solid rgba(27, 58, 92, 0.14);
+      }
+
+      .event-badge.failed {
+        color: var(--white);
+        background: var(--warning);
+      }
+
+      .sign-out-button,
+      .new-members-toggle {
+        min-height: 44px;
+        padding: 0 14px;
+        color: var(--white);
+        background: var(--teal);
+        border-radius: 14px;
+        font-size: 16px;
+        font-weight: 950;
+      }
+
+      .sign-out-button:disabled {
+        opacity: 0.58;
+      }
+
+      .new-members-toggle {
+        color: var(--navy);
+        background: var(--aqua);
+      }
+
+      .new-members-count {
+        color: var(--teal);
+        font-size: 24px;
+        font-weight: 950;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .empty-panel {
+        padding: 12px;
+        color: var(--muted);
+        font-size: 17px;
+        font-weight: 820;
+        line-height: 1.25;
       }
 
       .search-zone {
@@ -559,6 +747,16 @@
         }
       }
 
+      @keyframes tealRowFlash {
+        from {
+          background: rgba(33, 150, 243, 0.24);
+        }
+
+        to {
+          background: rgba(232, 244, 248, 0.58);
+        }
+      }
+
       @media (max-height: 720px) {
         body {
           font-size: 21px;
@@ -583,6 +781,12 @@
 
         .search-input {
           min-height: 62px;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .dashboard-panels {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -610,6 +814,33 @@
         <div id="momentContent" class="moment-content"></div>
         <div id="lastUpdated" class="last-updated" hidden></div>
       </main>
+
+      <section class="dashboard-panels" aria-label="Pool activity">
+        <article class="panel">
+          <div class="panel-header">
+            <span>Recent Activity</span>
+            <span class="panel-subtitle">Last 5</span>
+          </div>
+          <div id="recentActivity" class="activity-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <span>Currently in Pool</span>
+            <span id="activeMessage" class="panel-action-message"></span>
+          </div>
+          <div id="activeList" class="active-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <span>🆕 New Members Today</span>
+            <button id="newMembersToggle" class="new-members-toggle" type="button">Show</button>
+          </div>
+          <div id="newMembersSummary" class="new-members-count">0</div>
+          <div id="newMembersList" class="signup-list" hidden></div>
+        </article>
+      </section>
 
       <section class="search-zone" aria-label="Member search">
         <div class="search-label">
@@ -692,14 +923,19 @@
         swimmerCount: 0,
         last5: [],
         activeMembers: [],
+        signupsToday: [],
         seenEventKeys: new Set(),
         seenEventOrder: [],
+        activitySeenKeys: new Set(),
+        activityFlashKey: '',
         currentMomentUntil: 0,
         failedMoment: null,
         idleLineIndex: 0,
         searchDebounce: null,
         searchMode: 'normal',
-        lastSearchResults: []
+        lastSearchResults: [],
+        signingOutPhones: new Set(),
+        newMembersExpanded: false
       };
 
       const el = {
@@ -709,6 +945,12 @@
         momentCard: document.getElementById('momentCard'),
         momentContent: document.getElementById('momentContent'),
         lastUpdated: document.getElementById('lastUpdated'),
+        recentActivity: document.getElementById('recentActivity'),
+        activeList: document.getElementById('activeList'),
+        activeMessage: document.getElementById('activeMessage'),
+        newMembersToggle: document.getElementById('newMembersToggle'),
+        newMembersSummary: document.getElementById('newMembersSummary'),
+        newMembersList: document.getElementById('newMembersList'),
         searchInput: document.getElementById('searchInput'),
         searchResults: document.getElementById('searchResults'),
         searchMessage: document.getElementById('searchMessage'),
@@ -898,6 +1140,166 @@
         }
       }
 
+      function getEventBadges(event) {
+        const badges = [];
+
+        if (isFailedEvent(event)) {
+          badges.push('<span class="event-badge failed">❌ Failed</span>');
+        } else if (event?.type === 'check_in') {
+          badges.push('<span class="event-badge checked-in">✅ Checked In</span>');
+        } else if (event?.type === 'sign_out') {
+          badges.push('<span class="event-badge signed-out">👋 Signed Out</span>');
+        }
+
+        if (Number(event?.numGuests) > 0) {
+          badges.push('<span class="event-badge guest">🎟️ Guest</span>');
+        }
+
+        return badges.join('');
+      }
+
+      function renderRecentActivity() {
+        const events = state.last5.slice(0, 5);
+
+        if (events.length === 0) {
+          el.recentActivity.innerHTML = '<div class="empty-panel">No activity yet today.</div>';
+          return;
+        }
+
+        el.recentActivity.innerHTML = events.map((event) => {
+          const key = eventKey(event);
+          const name = getEventName(event);
+          const flashClass = key === state.activityFlashKey ? ' flash' : '';
+
+          return `
+            <div class="activity-row${flashClass}">
+              <div class="activity-avatar" aria-hidden="true">${escapeHtml(initialsFor(name))}</div>
+              <div class="row-name">${escapeHtml(name)}</div>
+              <div class="row-time">${escapeHtml(formatTime(event.timestamp || ''))}</div>
+              <div class="event-badges">${getEventBadges(event)}</div>
+            </div>
+          `;
+        }).join('');
+
+        if (state.activityFlashKey) {
+          window.setTimeout(() => {
+            state.activityFlashKey = '';
+            renderRecentActivity();
+          }, 220);
+        }
+      }
+
+      function renderActiveList() {
+        const members = state.activeMembers.filter((member) => {
+          return !state.signingOutPhones.has(normalizePhone(member.phone || member.GSI1SK));
+        });
+
+        if (members.length === 0) {
+          el.activeList.innerHTML = '<div class="empty-panel">Nobody is marked in the pool right now.</div>';
+          return;
+        }
+
+        el.activeList.innerHTML = members.map((member) => {
+          const name = member.membershipName || 'Member';
+          const phone = member.phone || member.GSI1SK || '';
+          const signedInAt = member.signedInAt || member.createdAt;
+          const phoneKey = normalizePhone(phone);
+
+          return `
+            <div class="active-row" data-phone="${escapeHtml(phoneKey)}">
+              <div>
+                <div class="row-name">${escapeHtml(name)}</div>
+                <div class="row-note">Signed in ${escapeHtml(formatTime(signedInAt || ''))}</div>
+              </div>
+              <div class="row-time">${escapeHtml(phone || 'No phone')}</div>
+              <button class="sign-out-button" type="button" data-phone="${escapeHtml(phoneKey)}">Sign Out</button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderNewMembersToday() {
+        const count = state.signupsToday.length;
+        el.newMembersSummary.textContent = `${count} ${pluralize(count, 'new member')}`;
+        el.newMembersToggle.textContent = state.newMembersExpanded ? 'Hide' : 'Show';
+        el.newMembersList.hidden = !state.newMembersExpanded;
+
+        if (!state.newMembersExpanded) {
+          return;
+        }
+
+        if (count === 0) {
+          el.newMembersList.innerHTML = '<div class="empty-panel">No new signups yet today.</div>';
+          return;
+        }
+
+        el.newMembersList.innerHTML = state.signupsToday.map((member) => `
+          <div class="signup-row">
+            <div>
+              <div class="row-name">${escapeHtml(member.name || 'New member')}</div>
+              <div class="row-note">${escapeHtml(member.tier || 'Membership')}</div>
+            </div>
+            <div class="row-time">${escapeHtml(formatTime(member.signed_up_at || ''))}</div>
+          </div>
+        `).join('');
+      }
+
+      async function manuallySignOut(member, row) {
+        const name = member.membershipName || 'Member';
+        const confirmed = window.confirm(`Sign out ${name}? They might still be at the pool.`);
+
+        if (!confirmed) {
+          return;
+        }
+
+        const phone = member.phone || member.GSI1SK || '';
+        const phoneKey = normalizePhone(phone);
+        const button = row.querySelector('.sign-out-button');
+
+        el.activeMessage.classList.remove('error');
+        el.activeMessage.textContent = 'Signing out...';
+
+        if (button) {
+          button.disabled = true;
+        }
+
+        try {
+          await postJson('/signout/manual', {
+            location_id: LOCATION_ID,
+            email: member.email,
+            phone,
+            signed_out_by: 'front_desk_pin'
+          });
+
+          state.signingOutPhones.add(phoneKey);
+          window.setTimeout(() => {
+            state.signingOutPhones.delete(phoneKey);
+          }, 10000);
+          row.classList.add('removing');
+          state.activeMembers = state.activeMembers.filter((activeMember) => {
+            return normalizePhone(activeMember.phone || activeMember.GSI1SK) !== phoneKey;
+          });
+          state.swimmerCount = Math.max(0, state.swimmerCount - 1);
+          el.activeMessage.textContent = 'Signed out';
+          window.setTimeout(() => {
+            renderActiveList();
+            renderIdle();
+          }, 190);
+        } catch (error) {
+          if (error.status === 401) {
+            showPinOverlay('That PIN did not work. Try again.');
+            return;
+          }
+
+          el.activeMessage.classList.add('error');
+          el.activeMessage.textContent = error.message || 'Could not sign out';
+
+          if (button) {
+            button.disabled = false;
+          }
+        }
+      }
+
       function updateClock() {
         el.clock.textContent = formatTime();
       }
@@ -935,7 +1337,7 @@
         el.lastUpdated.hidden = true;
       }
 
-      function handlePollSuccess(today, active) {
+      function handlePollSuccess(today, active, signups) {
         window.clearTimeout(state.offlineDimTimer);
         state.failedPolls = 0;
         state.currentDelay = POLL_INTERVAL_MS;
@@ -944,11 +1346,22 @@
         updateConnection('live');
 
         const events = Array.isArray(today?.last5) ? today.last5 : [];
+        const newestEventKey = events[0] ? eventKey(events[0]) : '';
+
+        if (!state.firstPoll && newestEventKey && !state.activitySeenKeys.has(newestEventKey)) {
+          state.activityFlashKey = newestEventKey;
+        }
+
+        events.forEach((event) => state.activitySeenKeys.add(eventKey(event)));
         state.last5 = events;
         state.activeMembers = Array.isArray(active?.members) ? active.members : [];
+        state.signupsToday = Array.isArray(signups?.members) ? signups.members : [];
         state.swimmerCount = Number(active?.currentlyInPool) || state.activeMembers.length || 0;
 
         processEvents(events);
+        renderRecentActivity();
+        renderActiveList();
+        renderNewMembersToday();
         renderIdle();
       }
 
@@ -989,17 +1402,44 @@
         return response.json();
       }
 
+      async function postJson(path, body) {
+        const response = await fetch(`${API_URL}${path}`, {
+          method: 'POST',
+          cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Dashboard-Token': state.dashboardPin
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (response.status === 401) {
+          const error = new Error('Unauthorized');
+          error.status = 401;
+          throw error;
+        }
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(payload.message || `Request failed with ${response.status}`);
+        }
+
+        return payload;
+      }
+
       async function pollDashboard() {
         window.clearTimeout(state.pollTimer);
 
         try {
           const query = `location_id=${encodeURIComponent(LOCATION_ID)}`;
-          const [today, active] = await Promise.all([
+          const [today, active, signups] = await Promise.all([
             fetchJson(`/dashboard/today?${query}`),
-            fetchJson(`/dashboard/active?${query}`)
+            fetchJson(`/dashboard/active?${query}`),
+            fetchJson(`/dashboard/signups-today?${query}`)
           ]);
 
-          handlePollSuccess(today, active);
+          handlePollSuccess(today, active, signups);
         } catch (error) {
           handlePollError(error);
         }
@@ -1269,6 +1709,29 @@
           }
         });
 
+        el.activeList.addEventListener('click', (event) => {
+          const button = event.target.closest('.sign-out-button');
+
+          if (!button) {
+            return;
+          }
+
+          const row = button.closest('.active-row');
+          const phoneKey = button.dataset.phone;
+          const member = state.activeMembers.find((activeMember) => {
+            return normalizePhone(activeMember.phone || activeMember.GSI1SK) === phoneKey;
+          });
+
+          if (row && member) {
+            manuallySignOut(member, row);
+          }
+        });
+
+        el.newMembersToggle.addEventListener('click', () => {
+          state.newMembersExpanded = !state.newMembersExpanded;
+          renderNewMembersToday();
+        });
+
         el.momentCard.addEventListener('click', (event) => {
           const button = event.target.closest('.search-failed-button');
 
@@ -1290,6 +1753,9 @@
         bindEvents();
         updateClock();
         renderIdle();
+        renderRecentActivity();
+        renderActiveList();
+        renderNewMembersToday();
         state.clockTimer = window.setInterval(updateClock, 10000);
         state.idleLineTimer = window.setInterval(() => {
           state.idleLineIndex += 1;

@@ -5,6 +5,8 @@ import {
   ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 
+import { resetActiveRows } from '../services/dynamo.mjs';
+
 let documentClient;
 const ACTIVE_MEMBERS_INDEX_NAME = 'active-members-index';
 const SEARCH_LIMIT = 20;
@@ -147,6 +149,25 @@ async function scanMemberMatches(commandInput, query) {
   return matches;
 }
 
+async function scanAllPages(commandInput) {
+  const items = [];
+  let exclusiveStartKey;
+
+  do {
+    const result = await getDocumentClient().send(
+      new ScanCommand({
+        ...commandInput,
+        ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
+      }),
+    );
+
+    items.push(...(result.Items ?? []));
+    exclusiveStartKey = result.LastEvaluatedKey;
+  } while (exclusiveStartKey);
+
+  return items;
+}
+
 export async function todayHandler(req, res, next) {
   try {
     const locationId = getLocationId(req, res);
@@ -205,15 +226,85 @@ export async function activeHandler(req, res, next) {
         ':gsi1pk': buildActivePk(locationId),
       },
     });
-    const members = activeMembers.map((member) => ({
-      membershipName: member.membershipName,
-      phone: member.phone,
-      GSI1SK: member.GSI1SK,
-    }));
+    const members = activeMembers
+      .sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')))
+      .map((member) => ({
+        membershipName: member.membershipName,
+        email: member.email,
+        phone: member.phone,
+        GSI1SK: member.GSI1SK,
+        signedInAt: member.createdAt,
+        createdAt: member.createdAt,
+        pk: member.pk,
+        sk: member.sk,
+      }));
 
     return res.status(200).json({
       currentlyInPool: members.length,
       members,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function signupsTodayHandler(req, res, next) {
+  try {
+    const locationId = getLocationId(req, res);
+
+    if (!locationId) {
+      return null;
+    }
+
+    const tableName = requireEnv('MEMBERS_TABLE_NAME');
+    const sourcePrefix = `ghl_signup_${locationId}_${getLocalDateString()}`;
+    const members = await scanAllPages({
+      TableName: tableName,
+      FilterExpression: '#pk = :pk AND begins_with(#source, :sourcePrefix)',
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+        '#source': 'source',
+      },
+      ExpressionAttributeValues: {
+        ':pk': buildMemberPk(locationId),
+        ':sourcePrefix': sourcePrefix,
+      },
+    });
+    const mappedMembers = members
+      .map((member) => ({
+        name: member.membershipName ?? member.full_name,
+        tier: member.membership_tier ?? member.membershipType,
+        signed_up_at: member.signupUpdatedAt ?? member.createdAt ?? member.importedAt,
+      }))
+      .sort((a, b) => String(b.signed_up_at ?? '').localeCompare(String(a.signed_up_at ?? '')));
+
+    return res.status(200).json({
+      count: mappedMembers.length,
+      members: mappedMembers,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function resetActiveHandler(req, res, next) {
+  try {
+    const locationId = getLocationId(req, res);
+
+    if (!locationId) {
+      return null;
+    }
+
+    console.warn('Admin reset-active called', {
+      locationId,
+    });
+
+    const result = await resetActiveRows(locationId);
+
+    return res.status(200).json({
+      valid: true,
+      message: `Reset ${result.resetCount} active rows`,
+      ...result,
     });
   } catch (error) {
     return next(error);
