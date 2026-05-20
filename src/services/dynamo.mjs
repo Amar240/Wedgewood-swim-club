@@ -51,6 +51,11 @@ function hasMetadataValue(value) {
   return value !== undefined && value !== null && value !== '';
 }
 
+function normalizePhone(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
 function buildEventItem(
   locationId,
   membershipName,
@@ -92,6 +97,22 @@ function buildEventItem(
     if (hasMetadataValue(metadata.email)) {
       item.email = metadata.email;
     }
+
+    if (hasMetadataValue(metadata.eventType)) {
+      item.event_type = metadata.eventType;
+    }
+
+    if (hasMetadataValue(metadata.checkedInBy)) {
+      item.checked_in_by = metadata.checkedInBy;
+    }
+
+    if (hasMetadataValue(metadata.source)) {
+      item.source = metadata.source;
+    }
+
+    if (hasMetadataValue(metadata.userAgent)) {
+      item.user_agent = metadata.userAgent;
+    }
   }
 
   if (type === 'sign_out') {
@@ -101,10 +122,23 @@ function buildEventItem(
 
     if (hasMetadataValue(metadata.signedOutBy)) {
       item.signedOutBy = metadata.signedOutBy;
+      item.signed_out_by = metadata.signedOutBy;
     }
 
     if (hasMetadataValue(metadata.manual)) {
       item.manual = metadata.manual;
+    }
+
+    if (hasMetadataValue(metadata.eventType)) {
+      item.event_type = metadata.eventType;
+    }
+
+    if (hasMetadataValue(metadata.source)) {
+      item.source = metadata.source;
+    }
+
+    if (hasMetadataValue(metadata.userAgent)) {
+      item.user_agent = metadata.userAgent;
     }
 
     if (hasMetadataValue(metadata.activeCheckInSk)) {
@@ -202,6 +236,31 @@ async function findActiveCheckInEventFromDailyLog(locationId, phone) {
   return null;
 }
 
+async function findActiveCheckInEventFromActiveIndex(locationId, phone) {
+  const normalizedPhone = normalizePhone(phone);
+
+  if (!normalizedPhone) {
+    return null;
+  }
+
+  const activeItems = await queryAllPages({
+    TableName: requireEnv('DYNAMO_TABLE_NAME'),
+    IndexName: ACTIVE_MEMBERS_INDEX_NAME,
+    KeyConditionExpression: 'GSI1PK = :gsi1pk',
+    ExpressionAttributeValues: {
+      ':gsi1pk': buildActiveMembersPk(locationId),
+    },
+  });
+
+  return activeItems
+    .filter((item) => {
+      return normalizePhone(item.phone || item.GSI1SK) === normalizedPhone;
+    })
+    .sort((a, b) => {
+      return String(b.createdAt ?? b.sk ?? '').localeCompare(String(a.createdAt ?? a.sk ?? ''));
+    })[0] ?? null;
+}
+
 export async function getActiveCheckInEvent(locationId, phone) {
   try {
     const activeItems = await queryAllPages({
@@ -220,6 +279,12 @@ export async function getActiveCheckInEvent(locationId, phone) {
 
     if (activeItem?.pk && activeItem?.sk) {
       return activeItem;
+    }
+
+    const normalizedActiveItem = await findActiveCheckInEventFromActiveIndex(locationId, phone);
+
+    if (normalizedActiveItem?.pk && normalizedActiveItem?.sk) {
+      return normalizedActiveItem;
     }
 
     return await findActiveCheckInEventFromDailyLog(locationId, phone);

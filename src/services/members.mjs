@@ -35,6 +35,11 @@ function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
+function normalizePhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
 function buildMemberSk(email) {
   return `MEMBER#${normalizeEmail(email)}`;
 }
@@ -96,6 +101,47 @@ export async function getMember(locationId, email) {
     return result.Items?.[0] ?? null;
   } catch (error) {
     throw new Error(`Failed to get member: ${error.message}`);
+  }
+}
+
+export async function getMemberByPhone(locationId, phone) {
+  try {
+    const tableName = requireEnv('MEMBERS_TABLE_NAME');
+    const normalizedPhone = normalizePhone(phone);
+
+    if (!normalizedPhone) {
+      return null;
+    }
+
+    let exclusiveStartKey;
+
+    do {
+      const result = await getDocumentClient().send(
+        new QueryCommand({
+          TableName: tableName,
+          KeyConditionExpression: 'pk = :pk',
+          ExpressionAttributeValues: {
+            ':pk': buildMemberPk(locationId),
+          },
+          Limit: 100,
+          ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
+        }),
+      );
+
+      const member = result.Items?.find((item) => {
+        return normalizePhone(item.phone) === normalizedPhone;
+      });
+
+      if (member) {
+        return member;
+      }
+
+      exclusiveStartKey = result.LastEvaluatedKey;
+    } while (exclusiveStartKey);
+
+    return null;
+  } catch (error) {
+    throw new Error(`Failed to get member by phone: ${error.message}`);
   }
 }
 

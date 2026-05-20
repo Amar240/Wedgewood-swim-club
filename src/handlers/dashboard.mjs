@@ -339,6 +339,19 @@ export async function searchHandler(req, res, next) {
       },
       Limit: 100,
     }, query);
+    const activeMembers = matches.length > 0
+      ? await queryAllPages({
+        TableName: requireEnv('DYNAMO_TABLE_NAME'),
+        IndexName: ACTIVE_MEMBERS_INDEX_NAME,
+        KeyConditionExpression: 'GSI1PK = :gsi1pk',
+        ExpressionAttributeValues: {
+          ':gsi1pk': buildActivePk(locationId),
+        },
+      })
+      : [];
+    const activePhones = new Set(activeMembers.map((member) => {
+      return normalizePhone(member.phone || member.GSI1SK);
+    }).filter(Boolean));
 
     return res.status(200).json({
       matches: matches.map((member) => ({
@@ -349,6 +362,8 @@ export async function searchHandler(req, res, next) {
         maxMembers: member.maxMembers,
         familyTextRaw: member.familyTextRaw,
         membershipStatus: member.membershipStatus,
+        location_id: locationId,
+        is_currently_active: activePhones.has(normalizePhone(member.phone)),
       })),
     });
   } catch (error) {

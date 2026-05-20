@@ -1,7 +1,10 @@
 import dotenv from 'dotenv';
 import express from 'express';
 
-import { checkInHandler } from './handlers/checkIn.mjs';
+import {
+  checkInHandler,
+  manualCheckInHandler,
+} from './handlers/checkIn.mjs';
 import {
   activeHandler,
   dashboardAuth,
@@ -34,6 +37,7 @@ app.get('/dashboard', (req, res) => {
 app.get('/welcome', welcomeHandler);
 app.get('/goodbye', goodbyeHandler);
 app.post('/checkin', checkInHandler);
+app.post('/checkin/manual', dashboardAuth, manualCheckInHandler);
 app.post('/signout', signOutHandler);
 app.post('/signout/manual', dashboardAuth, manualSignOutHandler);
 app.post('/signup', signupHandler);

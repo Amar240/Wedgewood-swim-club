@@ -1,5 +1,11 @@
-import { writeCheckInEvent } from '../services/dynamo.mjs';
-import { getMember } from '../services/members.mjs';
+import {
+  getActiveCheckInEvent,
+  writeCheckInEvent,
+} from '../services/dynamo.mjs';
+import {
+  getMember,
+  getMemberByPhone,
+} from '../services/members.mjs';
 import { isAlreadyCheckedIn } from '../utils/stateCheck.mjs';
 import { isWebhookAuthorized } from '../utils/webhookAuth.mjs';
 
@@ -9,6 +15,11 @@ function hasValue(value) {
 
 function cleanString(value) {
   return typeof value === 'string' ? value.trim() : value;
+}
+
+function normalizePhone(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits.length > 10 ? digits.slice(-10) : digits;
 }
 
 function getMembershipName(body) {
@@ -53,6 +64,37 @@ function getMissingFields(payload) {
   }
 
   return missingFields;
+}
+
+function normalizeManualCheckInRequest(body) {
+  return {
+    locationId: cleanString(body?.location_id),
+    email: cleanString(body?.email),
+    phone: cleanString(body?.phone),
+    checkedInBy: 'front_desk_pin',
+  };
+}
+
+function getManualMissingFields(payload) {
+  const missingFields = [];
+
+  if (!hasValue(payload?.locationId)) {
+    missingFields.push('location_id');
+  }
+
+  if (!hasValue(payload?.email) && !hasValue(payload?.phone)) {
+    missingFields.push('email or phone');
+  }
+
+  return missingFields;
+}
+
+function isMemberActive(member) {
+  const status = String(
+    member?.membershipStatus ?? member?.membership_status ?? '',
+  ).trim().toLowerCase();
+
+  return status === 'active';
 }
 
 export async function checkInHandler(req, res, next) {
@@ -155,6 +197,91 @@ export async function checkInHandler(req, res, next) {
       membershipType: member.membershipType,
       maxMembers: member.maxMembers,
       familyMembers: member.familyTextRaw ?? null,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function manualCheckInHandler(req, res, next) {
+  try {
+    const payload = normalizeManualCheckInRequest(req.body);
+    const missingFields = getManualMissingFields(payload);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        valid: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`,
+      });
+    }
+
+    let member = hasValue(payload.email)
+      ? await getMember(payload.locationId, payload.email)
+      : null;
+
+    if (!member && hasValue(payload.phone)) {
+      member = await getMemberByPhone(payload.locationId, payload.phone);
+    }
+
+    if (!member) {
+      return res.status(404).json({
+        valid: false,
+        message: 'Member not found',
+      });
+    }
+
+    if (!isMemberActive(member)) {
+      return res.status(403).json({
+        valid: false,
+        message: 'Member is not active',
+      });
+    }
+
+    const eventPhone = normalizePhone(payload.phone) || normalizePhone(member.phone);
+
+    if (!eventPhone) {
+      return res.status(400).json({
+        valid: false,
+        message: 'Missing required fields: phone',
+      });
+    }
+
+    const membershipName = member.membershipName ?? member.full_name ?? 'Member';
+    const activeCheckInEvent = await getActiveCheckInEvent(payload.locationId, eventPhone);
+
+    if (activeCheckInEvent) {
+      return res.status(200).json({
+        valid: true,
+        already_in_pool: true,
+        message: `${membershipName} is already checked in`,
+      });
+    }
+
+    console.log('Manual check-in by staff:', {
+      name: membershipName,
+      email: member.email ?? payload.email,
+      phone: eventPhone,
+    });
+
+    await writeCheckInEvent(
+      payload.locationId,
+      membershipName,
+      eventPhone,
+      'check_in',
+      1,
+      0,
+      {
+        email: member.email ?? payload.email,
+        eventType: 'manual_checkin',
+        checkedInBy: payload.checkedInBy,
+        source: 'dashboard_manual',
+        userAgent: req.headers?.['user-agent'],
+      },
+    );
+
+    return res.status(200).json({
+      valid: true,
+      message: `Checked in ${membershipName}`,
     });
   } catch (error) {
     return next(error);

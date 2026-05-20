@@ -451,6 +451,7 @@
       }
 
       .sign-out-button,
+      .manual-check-in-button,
       .new-members-toggle {
         min-height: 44px;
         padding: 0 14px;
@@ -461,13 +462,34 @@
         font-weight: 950;
       }
 
-      .sign-out-button:disabled {
+      .manual-check-in-button {
+        color: var(--white);
+        background: var(--success);
+      }
+
+      .sign-out-button:disabled,
+      .manual-check-in-button:disabled {
         opacity: 0.58;
       }
 
       .new-members-toggle {
         color: var(--navy);
         background: var(--aqua);
+      }
+
+      .reset-pool-button {
+        min-height: 44px;
+        padding: 0 12px;
+        color: var(--muted);
+        background: rgba(88, 112, 131, 0.12);
+        border: 1px solid rgba(88, 112, 131, 0.22);
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      .reset-pool-button:disabled {
+        opacity: 0.58;
       }
 
       .new-members-count {
@@ -545,9 +567,9 @@
 
       .results {
         display: grid;
-        gap: 10px;
+        gap: 14px;
         min-height: 0;
-        padding-right: 3px;
+        padding: 8px 3px 18px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }
@@ -555,11 +577,13 @@
       .result-row {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: 14px;
+        align-items: center;
+        gap: 18px;
         width: 100%;
-        min-height: 76px;
-        padding: 14px 16px;
+        min-height: 92px;
+        padding: 18px 20px;
         color: var(--text);
+        cursor: pointer;
         text-align: left;
         background: rgba(255, 255, 255, 0.94);
         border: 2px solid rgba(27, 58, 92, 0.1);
@@ -571,10 +595,15 @@
         transform: scale(0.992);
       }
 
+      .result-row:focus-visible {
+        outline: 4px solid rgba(33, 150, 243, 0.3);
+        outline-offset: 2px;
+      }
+
       .result-name {
         overflow: hidden;
         color: var(--navy);
-        font-size: 24px;
+        font-size: 28px;
         font-weight: 950;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -584,7 +613,7 @@
       .result-family {
         margin-top: 4px;
         color: var(--muted);
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 750;
         line-height: 1.24;
       }
@@ -593,6 +622,13 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+
+      .result-actions {
+        display: grid;
+        gap: 8px;
+        justify-items: end;
+        align-self: center;
       }
 
       .badge {
@@ -828,6 +864,7 @@
           <div class="panel-header">
             <span>Currently in Pool</span>
             <span id="activeMessage" class="panel-action-message"></span>
+            <button id="resetPoolButton" class="reset-pool-button" type="button">🔄 Reset Pool</button>
           </div>
           <div id="activeList" class="active-list"></div>
         </article>
@@ -948,6 +985,7 @@
         recentActivity: document.getElementById('recentActivity'),
         activeList: document.getElementById('activeList'),
         activeMessage: document.getElementById('activeMessage'),
+        resetPoolButton: document.getElementById('resetPoolButton'),
         newMembersToggle: document.getElementById('newMembersToggle'),
         newMembersSummary: document.getElementById('newMembersSummary'),
         newMembersList: document.getElementById('newMembersList'),
@@ -1300,6 +1338,81 @@
         }
       }
 
+      async function manuallyCheckIn(member, button) {
+        const name = member.membershipName || 'Member';
+        const confirmed = window.confirm(`Check in ${name}?`);
+
+        if (!confirmed) {
+          return;
+        }
+
+        el.searchMessage.textContent = 'Checking in...';
+
+        if (button) {
+          button.disabled = true;
+        }
+
+        try {
+          const result = await postJson('/checkin/manual', {
+            location_id: member.location_id || LOCATION_ID,
+            email: member.email,
+            phone: member.phone,
+            checked_in_by: 'front_desk_pin'
+          });
+
+          el.searchMessage.textContent = result.message || `✓ Checked in ${name}`;
+
+          member.is_currently_active = true;
+
+          renderSearchResults(state.lastSearchResults);
+          pollDashboard();
+        } catch (error) {
+          if (error.status === 401) {
+            showPinOverlay('That PIN did not work. Try again.');
+            return;
+          }
+
+          el.searchMessage.textContent = error.message || 'Could not check in';
+
+          if (button) {
+            button.disabled = false;
+          }
+        }
+      }
+
+      async function resetPool() {
+        const confirmed = window.confirm('Reset the pool? This will mark all currently checked-in members as signed out. Use this at end of day or after the pool closes for weather.');
+
+        if (!confirmed) {
+          return;
+        }
+
+        el.activeMessage.classList.remove('error');
+        el.activeMessage.textContent = 'Resetting...';
+        el.resetPoolButton.disabled = true;
+
+        try {
+          await postJson(`/admin/reset-active?location_id=${encodeURIComponent(LOCATION_ID)}`, {});
+          state.activeMembers = [];
+          state.swimmerCount = 0;
+          el.activeMessage.textContent = 'Pool reset — 0 swimmers';
+          renderActiveList();
+          renderIdle();
+          pollDashboard();
+        } catch (error) {
+          if (error.status === 401) {
+            showPinOverlay('That PIN did not work. Try again.');
+            return;
+          }
+
+          window.alert(error.message || 'Could not reset pool');
+          el.activeMessage.classList.add('error');
+          el.activeMessage.textContent = 'Reset failed';
+        } finally {
+          el.resetPoolButton.disabled = false;
+        }
+      }
+
       function updateClock() {
         el.clock.textContent = formatTime();
       }
@@ -1531,6 +1644,10 @@
       }
 
       function isMemberActive(member) {
+        if (member.is_currently_active === true) {
+          return true;
+        }
+
         const memberPhone = normalizePhone(member.phone);
         const memberName = String(member.membershipName ?? '').trim().toLowerCase();
 
@@ -1577,7 +1694,7 @@
           const status = active ? 'In pool' : member.membershipStatus || 'Member';
 
           return `
-            <button class="result-row" type="button" data-index="${index}">
+            <div class="result-row" role="button" tabindex="0" data-index="${index}">
               <span>
                 <span class="result-name">${escapeHtml(member.membershipName || 'Unnamed member')}</span>
                 <span class="result-meta">
@@ -1585,8 +1702,11 @@
                 </span>
                 <span class="result-family">${escapeHtml(getFamilyText(member))}</span>
               </span>
-              <span class="badge${active ? ' active' : ''}">${escapeHtml(status)}</span>
-            </button>
+              <span class="result-actions">
+                <span class="badge${active ? ' active' : ''}">${escapeHtml(status)}</span>
+                ${active ? '' : `<button class="manual-check-in-button" type="button" data-index="${index}">✓ Check In</button>`}
+              </span>
+            </div>
           `;
         }).join('');
       }
@@ -1631,6 +1751,13 @@
       function debounceSearch() {
         window.clearTimeout(state.searchDebounce);
         state.searchDebounce = window.setTimeout(() => runSearch(el.searchInput.value), 300);
+      }
+
+      function scrollSearchIntoView() {
+        el.searchInput.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
       }
 
       function searchForFailedName(name) {
@@ -1690,18 +1817,52 @@
           pollDashboard();
         });
 
+        el.searchInput.addEventListener('focus', scrollSearchIntoView);
+
         el.searchInput.addEventListener('input', () => {
           state.searchMode = 'normal';
+          scrollSearchIntoView();
           debounceSearch();
         });
 
         el.searchResults.addEventListener('click', (event) => {
+          const checkInButton = event.target.closest('.manual-check-in-button');
+
+          if (checkInButton) {
+            const member = state.lastSearchResults[Number(checkInButton.dataset.index)];
+
+            if (member) {
+              manuallyCheckIn(member, checkInButton);
+            }
+
+            return;
+          }
+
           const row = event.target.closest('.result-row');
 
           if (!row) {
             return;
           }
 
+          const member = state.lastSearchResults[Number(row.dataset.index)];
+
+          if (member) {
+            showMemberDetail(member);
+          }
+        });
+
+        el.searchResults.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') {
+            return;
+          }
+
+          const row = event.target.closest('.result-row');
+
+          if (!row || event.target.closest('.manual-check-in-button')) {
+            return;
+          }
+
+          event.preventDefault();
           const member = state.lastSearchResults[Number(row.dataset.index)];
 
           if (member) {
@@ -1731,6 +1892,8 @@
           state.newMembersExpanded = !state.newMembersExpanded;
           renderNewMembersToday();
         });
+
+        el.resetPoolButton.addEventListener('click', resetPool);
 
         el.momentCard.addEventListener('click', (event) => {
           const button = event.target.closest('.search-failed-button');

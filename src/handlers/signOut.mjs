@@ -53,7 +53,7 @@ function normalizeManualSignOutRequest(body) {
     locationId: cleanString(body?.location_id),
     email: cleanString(body?.email),
     phone: cleanString(body?.phone),
-    signedOutBy: cleanString(body?.signed_out_by) || 'front_desk_pin',
+    signedOutBy: 'front_desk_pin',
   };
 }
 
@@ -215,7 +215,10 @@ export async function manualSignOutHandler(req, res, next) {
       {
         email: payload.email || member?.email,
         signedOutBy: payload.signedOutBy,
+        eventType: 'manual_signout',
         manual: true,
+        source: 'dashboard_manual',
+        userAgent: req.headers?.['user-agent'],
       },
       activeCheckInEvent,
     );
