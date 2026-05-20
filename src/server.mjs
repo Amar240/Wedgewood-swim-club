@@ -2,6 +2,11 @@ import dotenv from 'dotenv';
 import express from 'express';
 
 import { checkInHandler } from './handlers/checkIn.mjs';
+import {
+  activeHandler,
+  searchHandler,
+  todayHandler,
+} from './handlers/dashboard.mjs';
 import { healthHandler } from './handlers/health.mjs';
 import { signOutHandler } from './handlers/signOut.mjs';
 
@@ -15,6 +20,9 @@ app.use(express.json());
 app.get('/health', healthHandler);
 app.post('/checkin', checkInHandler);
 app.post('/signout', signOutHandler);
+app.get('/dashboard/today', todayHandler);
+app.get('/dashboard/active', activeHandler);
+app.get('/members/search', searchHandler);
 
 app.use((req, res) => {
   return res.status(404).json({
