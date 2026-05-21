@@ -1166,6 +1166,12 @@
       const MOMENT_HOLD_MS = 8000;
       const OFFLINE_DIM_MS = 60000;
       const SIGNUP_HELP = "Looks like they aren't a member yet — direct them to wedgewoodpool.com/memberships to sign up";
+      const DASHBOARD_TIME_OPTIONS = {
+        timeZone: 'America/New_York',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      };
 
       const idleLines = [
         'Quiet right now',
@@ -1254,10 +1260,7 @@
           return '--:--';
         }
 
-        return date.toLocaleTimeString([], {
-          hour: 'numeric',
-          minute: '2-digit'
-        });
+        return date.toLocaleTimeString([], DASHBOARD_TIME_OPTIONS);
       }
 
       function formatActivityTime(value) {
